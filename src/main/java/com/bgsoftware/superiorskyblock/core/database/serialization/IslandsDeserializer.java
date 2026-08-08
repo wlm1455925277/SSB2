@@ -2,8 +2,6 @@ package com.bgsoftware.superiorskyblock.core.database.serialization;
 
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.data.DatabaseBridge;
-import com.bgsoftware.superiorskyblock.api.data.DatabaseBridgeMode;
-import com.bgsoftware.superiorskyblock.api.data.DatabaseFilter;
 import com.bgsoftware.superiorskyblock.api.enums.Rating;
 import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.bgsoftware.superiorskyblock.api.island.IslandFlag;
@@ -11,7 +9,6 @@ import com.bgsoftware.superiorskyblock.api.island.IslandPrivilege;
 import com.bgsoftware.superiorskyblock.api.island.PlayerRole;
 import com.bgsoftware.superiorskyblock.api.key.Key;
 import com.bgsoftware.superiorskyblock.api.missions.Mission;
-import com.bgsoftware.superiorskyblock.api.objects.Pair;
 import com.bgsoftware.superiorskyblock.api.upgrades.Upgrade;
 import com.bgsoftware.superiorskyblock.api.world.Dimension;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
@@ -45,7 +42,6 @@ import java.util.function.Consumer;
 public class IslandsDeserializer {
 
     private static final SuperiorSkyblockPlugin plugin = SuperiorSkyblockPlugin.getPlugin();
-    private static final long MAX_SECONDS_TIMESTAMP = 9_999_999_999L;
 
     private static final Gson GSON = new GsonBuilder().create();
     private static final BigDecimal SYNCED_BANK_LIMIT_VALUE = BigDecimal.valueOf(-2);
@@ -717,50 +713,8 @@ public class IslandsDeserializer {
             Island.Builder builder = lookupIsland(databaseCache, uuid.get(), "islands_banks");
             builder.setBalance(balance.get());
             long lastInterestTime = islandBank.getLong("last_interest_time").orElse(currentTime);
-            long normalizedLastInterestTime = normalizeEpochSeconds(lastInterestTime);
-            long fixedLastInterestTime = fixBankInterestTime(normalizedLastInterestTime, currentTime);
-            builder.setLastInterestTime(fixedLastInterestTime);
-
-            if (shouldFixBankInterestTime(lastInterestTime, normalizedLastInterestTime, fixedLastInterestTime))
-                fixBankInterestTimeInDatabase(databaseBridge, uuid.get(), fixedLastInterestTime);
+            builder.setLastInterestTime(lastInterestTime > currentTime ? lastInterestTime / 1000 : lastInterestTime);
         });
-    }
-
-    private static long normalizeEpochSeconds(long timestamp) {
-        while (timestamp > MAX_SECONDS_TIMESTAMP)
-            timestamp /= 1000L;
-
-        return timestamp;
-    }
-
-    private static long fixBankInterestTime(long lastInterestTime, long currentTime) {
-        int bankInterestInterval = BuiltinModules.BANK.getConfiguration().getBankInterestInterval();
-        if (bankInterestInterval <= 0)
-            return lastInterestTime;
-
-        long nextInterest = bankInterestInterval - (currentTime - lastInterestTime);
-        return nextInterest > bankInterestInterval ? currentTime : lastInterestTime;
-    }
-
-    private static boolean shouldFixBankInterestTime(long originalLastInterestTime, long normalizedLastInterestTime,
-                                                     long fixedLastInterestTime) {
-        boolean clampedFutureTime = fixedLastInterestTime != normalizedLastInterestTime;
-        long fixedDatabaseValue = fixedLastInterestTime * 1000L;
-        boolean pollutedUnit = originalLastInterestTime > MAX_SECONDS_TIMESTAMP &&
-                originalLastInterestTime != fixedDatabaseValue;
-        return clampedFutureTime || pollutedUnit;
-    }
-
-    private static void fixBankInterestTimeInDatabase(DatabaseBridge databaseBridge, UUID islandUUID, long fixedLastInterestTime) {
-        DatabaseBridgeMode oldDatabaseBridgeMode = databaseBridge.getDatabaseBridgeMode();
-        databaseBridge.setDatabaseBridgeMode(DatabaseBridgeMode.SAVE_DATA);
-        try {
-            databaseBridge.updateObject("islands_banks",
-                    DatabaseFilter.fromFilter("island", islandUUID.toString()),
-                    new Pair<>("last_interest_time", fixedLastInterestTime * 1000L));
-        } finally {
-            databaseBridge.setDatabaseBridgeMode(oldDatabaseBridgeMode);
-        }
     }
 
     public static void deserializeIslandSettings(DatabaseBridge databaseBridge, DatabaseCache<Island.Builder> databaseCache) {
