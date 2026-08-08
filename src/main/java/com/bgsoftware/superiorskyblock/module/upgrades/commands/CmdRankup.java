@@ -21,7 +21,6 @@ import com.bgsoftware.superiorskyblock.core.events.plugin.PluginEvent;
 import com.bgsoftware.superiorskyblock.core.events.plugin.PluginEventsFactory;
 import com.bgsoftware.superiorskyblock.core.formatting.Formatters;
 import com.bgsoftware.superiorskyblock.core.messages.Message;
-import com.bgsoftware.superiorskyblock.island.IslandUtils;
 import com.bgsoftware.superiorskyblock.island.privilege.IslandPrivileges;
 import com.bgsoftware.superiorskyblock.island.upgrade.SUpgradeLevel;
 import com.bgsoftware.superiorskyblock.module.BuiltinModules;
@@ -122,17 +121,17 @@ public class CmdRankup implements IPermissibleCommand {
                 PluginEvent<PluginEventArgs.IslandUpgrade> event = PluginEventsFactory.callIslandUpgradeEvent(
                         island, superiorPlayer, upgrade, currentLevel, nextLevel, IslandUpgradeEvent.Cause.PLAYER_RANKUP);
 
-                List<UpgradeCost> upgradeCosts = event.getArgs().upgradeCosts;
+                UpgradeCost upgradeCost = event.getArgs().upgradeCost;
 
                 if (event.isCancelled()) {
                     hasNextLevel = false;
 
-                } else if (!IslandUtils.hasEnoughBalance(upgradeCosts, superiorPlayer)) {
+                } else if (!upgradeCost.hasEnoughBalance(superiorPlayer)) {
                     Message.NOT_ENOUGH_MONEY_TO_UPGRADE.send(superiorPlayer);
                     hasNextLevel = false;
 
                 } else {
-                    upgradeCosts.forEach(upgradeCost -> upgradeCost.withdrawCost(superiorPlayer));
+                    upgradeCost.withdrawCost(superiorPlayer);
 
                     for (String command : event.getArgs().commands) {
                         String parsedCommand = placeholdersService.get().parsePlaceholders(superiorPlayer.asOfflinePlayer(), command

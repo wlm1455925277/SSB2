@@ -37,7 +37,6 @@ public class PlayerCommandsMap extends CommandsMap {
         registerCommand(new CmdKick());
         registerCommand(new CmdLang());
         registerCommand(new CmdLeave());
-        registerCommand(new CmdLocalChat());
         registerCommand(new CmdMembers());
         registerCommand(new CmdName());
         registerCommand(new CmdOpen());

@@ -289,7 +289,7 @@ public class PortalsManagerServiceImpl implements PortalsManagerService, IServic
             // teleport player to destination location.
             if (schematic == null || island.wasSchematicGenerated(destination)) {
                 if (superiorPlayer != null) {
-                    superiorPlayer.teleportWithResult(island, destination, unused -> {
+                    superiorPlayer.teleport(island, destination, result -> {
                         generatingSchematicsIslands.remove(island.getUniqueId());
                     });
                 } else {

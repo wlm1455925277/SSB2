@@ -7,9 +7,9 @@ import com.bgsoftware.superiorskyblock.core.events.plugin.PluginEventsFactory;
 import com.bgsoftware.superiorskyblock.core.menu.button.AbstractMenuTemplateButton;
 import com.bgsoftware.superiorskyblock.core.menu.button.AbstractMenuViewButton;
 import com.bgsoftware.superiorskyblock.core.menu.button.MenuTemplateButtonImpl;
-import com.bgsoftware.superiorskyblock.api.menu.button.click.ButtonClickContext;
 import com.bgsoftware.superiorskyblock.core.menu.impl.MenuWarpManage;
 import com.bgsoftware.superiorskyblock.core.messages.Message;
+import org.bukkit.event.inventory.InventoryClickEvent;
 
 public class WarpManagePrivateButton extends AbstractMenuViewButton<MenuWarpManage.View> {
 
@@ -18,12 +18,12 @@ public class WarpManagePrivateButton extends AbstractMenuViewButton<MenuWarpMana
     }
 
     @Override
-    public void onButtonClick(ButtonClickContext<MenuWarpManage.View> context) {
+    public void onButtonClick(InventoryClickEvent clickEvent) {
         IslandWarp islandWarp = menuView.getIslandWarp();
 
         boolean openToPublic = islandWarp.hasPrivateFlag();
 
-        SuperiorPlayer superiorPlayer = plugin.getPlayers().getSuperiorPlayer(context.getPlayer());
+        SuperiorPlayer superiorPlayer = plugin.getPlayers().getSuperiorPlayer(clickEvent.getWhoClicked());
 
         if (openToPublic ? !PluginEventsFactory.callIslandOpenWarpEvent(islandWarp.getIsland(), superiorPlayer, islandWarp) :
                 !PluginEventsFactory.callIslandCloseWarpEvent(islandWarp.getIsland(), superiorPlayer, islandWarp))
@@ -41,8 +41,8 @@ public class WarpManagePrivateButton extends AbstractMenuViewButton<MenuWarpMana
 
         @Override
         public MenuTemplateButton<MenuWarpManage.View> build() {
-            return new MenuTemplateButtonImpl<>(this, WarpManagePrivateButton.class,
-                    WarpManagePrivateButton::new);
+            return new MenuTemplateButtonImpl<>(buttonItem, clickSound, commands, requiredPermission,
+                    lackPermissionSound, WarpManagePrivateButton.class, WarpManagePrivateButton::new);
         }
 
     }

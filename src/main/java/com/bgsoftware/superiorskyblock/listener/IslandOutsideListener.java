@@ -2,7 +2,6 @@ package com.bgsoftware.superiorskyblock.listener;
 
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.island.Island;
-import com.bgsoftware.superiorskyblock.api.player.algorithm.PlayerTeleportAlgorithm;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
 import com.bgsoftware.superiorskyblock.core.ObjectsPools;
 import com.bgsoftware.superiorskyblock.core.threads.BukkitExecutor;
@@ -138,8 +137,8 @@ public class IslandOutsideListener extends AbstractGameEventListener {
         player.eject();
 
         if (fromIsland != null) {
-            superiorPlayer.teleportWithResult(fromIsland, result -> {
-                if (result != PlayerTeleportAlgorithm.TeleportResult.SUCCESS) {
+            superiorPlayer.teleport(fromIsland, result -> {
+                if (!result) {
                     superiorPlayer.teleport(plugin.getGrid().getSpawnIsland());
                 }
             });

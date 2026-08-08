@@ -16,7 +16,6 @@ import com.bgsoftware.superiorskyblock.core.database.bridge.IslandsDatabaseBridg
 import com.bgsoftware.superiorskyblock.core.itemstack.ItemBuilder;
 import com.bgsoftware.superiorskyblock.core.logging.Debug;
 import com.bgsoftware.superiorskyblock.core.logging.Log;
-import com.bgsoftware.superiorskyblock.island.IslandUtils;
 import com.google.common.base.Preconditions;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -192,7 +191,7 @@ public class SIslandWarp implements IslandWarp {
 
     private String getOwnerName() {
         SuperiorPlayer superiorPlayer = getIsland().getOwner();
-        return superiorPlayer == null ? IslandUtils.DEFAULT_NONE_VALUE : superiorPlayer.getName();
+        return superiorPlayer == null ? "None" : superiorPlayer.getName();
     }
 
 }

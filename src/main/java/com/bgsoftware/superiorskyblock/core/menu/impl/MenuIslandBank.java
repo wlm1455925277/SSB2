@@ -1,17 +1,16 @@
 package com.bgsoftware.superiorskyblock.core.menu.impl;
 
-import com.bgsoftware.superiorskyblock.core.menu.parser.MenuParserUtils;
-import com.bgsoftware.superiorskyblock.core.menu.MenuSlotsMap;
 import com.bgsoftware.common.annotations.Nullable;
 import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.bgsoftware.superiorskyblock.api.menu.layout.MenuLayout;
 import com.bgsoftware.superiorskyblock.api.menu.view.MenuView;
 import com.bgsoftware.superiorskyblock.api.world.GameSound;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
-import com.bgsoftware.superiorskyblock.core.menu.parser.MenuParserImpl;
+import com.bgsoftware.superiorskyblock.core.io.MenuParserImpl;
 import com.bgsoftware.superiorskyblock.core.menu.AbstractMenu;
 import com.bgsoftware.superiorskyblock.core.menu.MenuIdentifiers;
 import com.bgsoftware.superiorskyblock.core.menu.MenuParseResult;
+import com.bgsoftware.superiorskyblock.core.menu.MenuPatternSlots;
 import com.bgsoftware.superiorskyblock.core.menu.button.impl.BankBalanceButton;
 import com.bgsoftware.superiorskyblock.core.menu.button.impl.BankCustomDepositButton;
 import com.bgsoftware.superiorskyblock.core.menu.button.impl.BankCustomWithdrawButton;
@@ -49,21 +48,21 @@ public class MenuIslandBank extends AbstractMenu<IslandMenuView, IslandViewArgs>
             return null;
         }
 
-        MenuSlotsMap menuSlotsMap = menuParseResult.getPatternSlots();
+        MenuPatternSlots menuPatternSlots = menuParseResult.getPatternSlots();
         YamlConfiguration cfg = menuParseResult.getConfig();
         MenuLayout.Builder<IslandMenuView> patternBuilder = menuParseResult.getLayoutBuilder();
 
         if (cfg.isConfigurationSection("items")) {
             for (String itemChar : cfg.getConfigurationSection("items").getKeys(false)) {
                 if (cfg.isConfigurationSection("items." + itemChar + ".bank-action")) {
-                    List<Integer> slots = menuSlotsMap.getSlots(itemChar);
+                    List<Integer> slots = menuPatternSlots.getSlots(itemChar);
 
                     if (slots.isEmpty()) {
                         continue;
                     }
 
-                    GameSound successSound = MenuParserUtils.getSound(cfg.getConfigurationSection("sounds." + itemChar + ".success-sound"));
-                    GameSound failSound = MenuParserUtils.getSound(cfg.getConfigurationSection("sounds." + itemChar + ".fail-sound"));
+                    GameSound successSound = MenuParserImpl.getInstance().getSound(cfg.getConfigurationSection("sounds." + itemChar + ".success-sound"));
+                    GameSound failSound = MenuParserImpl.getInstance().getSound(cfg.getConfigurationSection("sounds." + itemChar + ".fail-sound"));
 
                     if (cfg.isDouble("items." + itemChar + ".bank-action.withdraw")) {
                         double withdrawPercentage = cfg.getDouble("items." + itemChar + ".bank-action.withdraw");
@@ -92,10 +91,10 @@ public class MenuIslandBank extends AbstractMenu<IslandMenuView, IslandViewArgs>
             }
         }
 
-        patternBuilder.mapButtons(MenuParserImpl.getInstance().parseButtonSlots(cfg, "balance", menuSlotsMap),
+        patternBuilder.mapButtons(MenuParserImpl.getInstance().parseButtonSlots(cfg, "balance", menuPatternSlots),
                 new BankBalanceButton.Builder());
 
-        patternBuilder.mapButtons(MenuParserImpl.getInstance().parseButtonSlots(cfg, "logs", menuSlotsMap),
+        patternBuilder.mapButtons(MenuParserImpl.getInstance().parseButtonSlots(cfg, "logs", menuPatternSlots),
                 new OpenBankLogsButton.Builder());
 
         return new MenuIslandBank(menuParseResult);

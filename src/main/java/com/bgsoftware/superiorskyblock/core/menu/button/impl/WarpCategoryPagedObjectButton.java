@@ -11,8 +11,8 @@ import com.bgsoftware.superiorskyblock.core.menu.TemplateItem;
 import com.bgsoftware.superiorskyblock.core.menu.button.AbstractPagedMenuButton;
 import com.bgsoftware.superiorskyblock.core.menu.button.PagedMenuTemplateButtonImpl;
 import com.bgsoftware.superiorskyblock.core.menu.impl.MenuWarpCategories;
-import com.bgsoftware.superiorskyblock.api.menu.button.click.ButtonClickContext;
 import com.bgsoftware.superiorskyblock.core.menu.view.MenuViewWrapper;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
 
 public class WarpCategoryPagedObjectButton extends AbstractPagedMenuButton<MenuWarpCategories.View, WarpCategory> {
@@ -22,7 +22,7 @@ public class WarpCategoryPagedObjectButton extends AbstractPagedMenuButton<MenuW
     }
 
     @Override
-    public ItemStack modifyViewItem(ItemBuilder itemBuilder) {
+    public ItemStack modifyViewItem(ItemStack buttonItem) {
         if (pagedObject == null) {
             return TemplateItem.AIR.build();
         }
@@ -48,10 +48,10 @@ public class WarpCategoryPagedObjectButton extends AbstractPagedMenuButton<MenuW
     }
 
     @Override
-    public void onButtonClick(ButtonClickContext<MenuWarpCategories.View> context) {
+    public void onButtonClick(InventoryClickEvent clickEvent) {
         menuView.setPreviousMove(false);
 
-        if (menuView.hasManagePerms() && context.getClickType().isRightClick()) {
+        if (menuView.hasManagePerms() && clickEvent.getClick().isRightClick()) {
             plugin.getMenus().openWarpCategoryManage(menuView.getInventoryViewer(), MenuViewWrapper.fromView(menuView), pagedObject);
         } else {
             plugin.getMenus().openWarps(menuView.getInventoryViewer(), MenuViewWrapper.fromView(menuView), pagedObject);
@@ -62,7 +62,8 @@ public class WarpCategoryPagedObjectButton extends AbstractPagedMenuButton<MenuW
 
         @Override
         public PagedMenuTemplateButton<MenuWarpCategories.View, WarpCategory> build() {
-            return new PagedMenuTemplateButtonImpl<>(this, WarpCategoryPagedObjectButton.class,
+            return new PagedMenuTemplateButtonImpl<>(buttonItem, clickSound, commands, requiredPermission,
+                    lackPermissionSound, nullItem, getButtonIndex(), WarpCategoryPagedObjectButton.class,
                     WarpCategoryPagedObjectButton::new);
         }
 

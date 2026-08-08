@@ -8,12 +8,11 @@ import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
 import com.bgsoftware.superiorskyblock.core.GameSoundImpl;
 import com.bgsoftware.superiorskyblock.core.events.plugin.PluginEventsFactory;
 import com.bgsoftware.superiorskyblock.core.formatting.Formatters;
-import com.bgsoftware.superiorskyblock.api.menu.button.click.ButtonClickContext;
-import com.bgsoftware.superiorskyblock.core.itemstack.ItemBuilder;
 import com.bgsoftware.superiorskyblock.core.menu.button.AbstractPagedMenuButton;
 import com.bgsoftware.superiorskyblock.core.menu.button.PagedMenuTemplateButtonImpl;
 import com.bgsoftware.superiorskyblock.core.menu.impl.MenuIslandFlags;
 import com.bgsoftware.superiorskyblock.core.messages.Message;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
 
 public class IslandFlagPagedObjectButton extends AbstractPagedMenuButton<MenuIslandFlags.View, MenuIslandFlags.IslandFlagInfo> {
@@ -23,7 +22,7 @@ public class IslandFlagPagedObjectButton extends AbstractPagedMenuButton<MenuIsl
     }
 
     @Override
-    public void onButtonClick(ButtonClickContext<MenuIslandFlags.View> context) {
+    public void onButtonClick(InventoryClickEvent clickEvent) {
         SuperiorPlayer inventoryViewer = menuView.getInventoryViewer();
 
         Island island = menuView.getIsland();
@@ -45,7 +44,7 @@ public class IslandFlagPagedObjectButton extends AbstractPagedMenuButton<MenuIsl
             island.enableSettings(islandFlag);
         }
 
-        GameSoundImpl.playSound(context.getPlayer(), pagedObject.getClickSound());
+        GameSoundImpl.playSound(clickEvent.getWhoClicked(), pagedObject.getClickSound());
 
         Message.UPDATED_SETTINGS.send(inventoryViewer, Formatters.CAPITALIZED_FORMATTER.format(islandFlag.getName()));
 
@@ -53,7 +52,7 @@ public class IslandFlagPagedObjectButton extends AbstractPagedMenuButton<MenuIsl
     }
 
     @Override
-    public ItemStack modifyViewItem(ItemBuilder itemBuilder) {
+    public ItemStack modifyViewItem(ItemStack buttonItem) {
         SuperiorPlayer inventoryViewer = menuView.getInventoryViewer();
         Island island = menuView.getIsland();
 
@@ -68,7 +67,8 @@ public class IslandFlagPagedObjectButton extends AbstractPagedMenuButton<MenuIsl
 
         @Override
         public PagedMenuTemplateButton<MenuIslandFlags.View, MenuIslandFlags.IslandFlagInfo> build() {
-            return new PagedMenuTemplateButtonImpl<>(this, IslandFlagPagedObjectButton.class,
+            return new PagedMenuTemplateButtonImpl<>(buttonItem, clickSound, commands, requiredPermission,
+                    lackPermissionSound, nullItem, getButtonIndex(), IslandFlagPagedObjectButton.class,
                     IslandFlagPagedObjectButton::new);
         }
 

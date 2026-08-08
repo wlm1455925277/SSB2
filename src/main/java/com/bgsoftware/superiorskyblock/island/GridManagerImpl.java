@@ -8,12 +8,10 @@ import com.bgsoftware.superiorskyblock.api.handlers.GridManager;
 import com.bgsoftware.superiorskyblock.api.hooks.LazyWorldsProvider;
 import com.bgsoftware.superiorskyblock.api.hooks.WorldsProvider;
 import com.bgsoftware.superiorskyblock.api.island.Island;
-import com.bgsoftware.superiorskyblock.api.island.IslandBiomeFlags;
 import com.bgsoftware.superiorskyblock.api.island.IslandPreview;
 import com.bgsoftware.superiorskyblock.api.island.SortingType;
 import com.bgsoftware.superiorskyblock.api.island.container.IslandsContainer;
 import com.bgsoftware.superiorskyblock.api.menu.view.MenuView;
-import com.bgsoftware.superiorskyblock.api.player.algorithm.PlayerTeleportAlgorithm;
 import com.bgsoftware.superiorskyblock.api.schematic.Schematic;
 import com.bgsoftware.superiorskyblock.api.service.dragon.DragonBattleService;
 import com.bgsoftware.superiorskyblock.api.world.Dimension;
@@ -369,19 +367,18 @@ public class GridManagerImpl extends Manager implements GridManager {
             } else {
                 Log.debugResult(Debug.CREATE_ISLAND, "Creation Callback", "Teleporting player");
 
-                builder.owner.teleportWithResult(island, result -> {
+                builder.owner.teleport(island, result -> {
                     Log.debugResult(Debug.CREATE_ISLAND, "Creation Callback",
                             "Teleported player. Result: " + result);
 
                     Message.CREATE_ISLAND.send(builder.owner, Formatters.LOCATION_FORMATTER.format(
                             islandLocation), System.currentTimeMillis() - startTime);
 
-                    if (result == PlayerTeleportAlgorithm.TeleportResult.SUCCESS) {
+                    if (result) {
                         if (affectedChunks != null) {
                             BukkitExecutor.sync(() -> {
                                 IslandUtils.resetChunksExcludedFromList(island, affectedChunks);
-                                island.setBiome(defaultDimension, biome,
-                                        IslandBiomeFlags.UPDATE_BLOCKS | IslandBiomeFlags.UPDATE_ALL_DIMENSIONS);
+                                island.setBiome(biome, true);
                             }, 10L);
                         }
 
@@ -430,8 +427,8 @@ public class GridManagerImpl extends Manager implements GridManager {
 
         Location previewLocation = plugin.getSettings().getIslandPreviews().getLocations().get(schematic.getName().toLowerCase(Locale.ENGLISH));
         if (previewLocation != null && previewLocation.getWorld() != null) {
-            superiorPlayer.teleportWithResult(previewLocation, result -> {
-                if (result == PlayerTeleportAlgorithm.TeleportResult.SUCCESS) {
+            superiorPlayer.teleport(previewLocation, result -> {
+                if (result) {
                     this.islandPreviews.startIslandPreview(new SIslandPreview(superiorPlayer, previewLocation, schematic, islandName, superiorPlayer.asPlayer().getGameMode()));
                     BukkitExecutor.ensureMain(() -> superiorPlayer.runIfOnline(player -> player.setGameMode(plugin.getSettings().getIslandPreviews().getGameMode())));
                     Message.ISLAND_PREVIEW_START.send(superiorPlayer, schematic.getName());
@@ -447,8 +444,8 @@ public class GridManagerImpl extends Manager implements GridManager {
         IslandPreview islandPreview = this.islandPreviews.endIslandPreview(superiorPlayer);
         if (islandPreview != null) {
             superiorPlayer.runIfOnline(player -> {
-                BukkitExecutor.ensureMain(() -> superiorPlayer.teleportWithResult(plugin.getGrid().getSpawnIsland(), teleportResult -> {
-                    if (teleportResult == PlayerTeleportAlgorithm.TeleportResult.SUCCESS && superiorPlayer.isOnline())
+                BukkitExecutor.ensureMain(() -> superiorPlayer.teleport(plugin.getGrid().getSpawnIsland(), teleportResult -> {
+                    if (teleportResult && superiorPlayer.isOnline())
                         player.setGameMode(islandPreview.getPreviousGameMode());
                 }));
                 PlayerChat.remove(player);

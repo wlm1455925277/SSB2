@@ -1,17 +1,16 @@
 package com.bgsoftware.superiorskyblock.core.menu.impl;
 
-import com.bgsoftware.superiorskyblock.core.menu.parser.MenuParserUtils;
-import com.bgsoftware.superiorskyblock.core.menu.MenuSlotsMap;
 import com.bgsoftware.common.annotations.Nullable;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.enums.BorderColor;
 import com.bgsoftware.superiorskyblock.api.menu.layout.MenuLayout;
 import com.bgsoftware.superiorskyblock.api.menu.view.MenuView;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
-import com.bgsoftware.superiorskyblock.core.menu.parser.MenuParserImpl;
+import com.bgsoftware.superiorskyblock.core.io.MenuParserImpl;
 import com.bgsoftware.superiorskyblock.core.menu.AbstractMenu;
 import com.bgsoftware.superiorskyblock.core.menu.MenuIdentifiers;
 import com.bgsoftware.superiorskyblock.core.menu.MenuParseResult;
+import com.bgsoftware.superiorskyblock.core.menu.MenuPatternSlots;
 import com.bgsoftware.superiorskyblock.core.menu.button.impl.BorderColorButton;
 import com.bgsoftware.superiorskyblock.core.menu.button.impl.BorderColorToggleButton;
 import com.bgsoftware.superiorskyblock.core.menu.converter.MenuConverter;
@@ -45,7 +44,7 @@ public class MenuBorderColor extends AbstractMenu<BaseMenuView, EmptyViewArgs> {
             return null;
         }
 
-        MenuSlotsMap menuSlotsMap = menuParseResult.getPatternSlots();
+        MenuPatternSlots menuPatternSlots = menuParseResult.getPatternSlots();
         YamlConfiguration cfg = menuParseResult.getConfig();
         MenuLayout.Builder<BaseMenuView> patternBuilder = menuParseResult.getLayoutBuilder();
 
@@ -56,21 +55,21 @@ public class MenuBorderColor extends AbstractMenu<BaseMenuView, EmptyViewArgs> {
                 if (!itemsSection.isConfigurationSection("enable-border") || !itemsSection.isConfigurationSection("disable-border"))
                     continue;
 
-                patternBuilder.setButtons(menuSlotsMap.getSlots(itemsSectionName),
+                patternBuilder.setButtons(menuPatternSlots.getSlots(itemsSectionName),
                         new BorderColorToggleButton.Builder()
-                                .setEnabledButtonItem(MenuParserUtils.getItemStack("menus/border-color.yml",
+                                .setEnabledItem(MenuParserImpl.getInstance().getItemStack("menus/border-color.yml",
                                         itemsSection.getConfigurationSection("disable-border")))
-                                .setDisabledButtonItem(MenuParserUtils.getItemStack("menus/border-color.yml",
+                                .setDisabledItem(MenuParserImpl.getInstance().getItemStack("menus/border-color.yml",
                                         itemsSection.getConfigurationSection("enable-border")))
                                 .build());
             }
         }
 
-        patternBuilder.mapButtons(MenuParserImpl.getInstance().parseButtonSlots(cfg, "green-color", menuSlotsMap),
+        patternBuilder.mapButtons(MenuParserImpl.getInstance().parseButtonSlots(cfg, "green-color", menuPatternSlots),
                 new BorderColorButton.Builder().setBorderColor(BorderColor.GREEN));
-        patternBuilder.mapButtons(MenuParserImpl.getInstance().parseButtonSlots(cfg, "red-color", menuSlotsMap),
+        patternBuilder.mapButtons(MenuParserImpl.getInstance().parseButtonSlots(cfg, "red-color", menuPatternSlots),
                 new BorderColorButton.Builder().setBorderColor(BorderColor.RED));
-        patternBuilder.mapButtons(MenuParserImpl.getInstance().parseButtonSlots(cfg, "blue-color", menuSlotsMap),
+        patternBuilder.mapButtons(MenuParserImpl.getInstance().parseButtonSlots(cfg, "blue-color", menuPatternSlots),
                 new BorderColorButton.Builder().setBorderColor(BorderColor.BLUE));
 
         return new MenuBorderColor(menuParseResult);

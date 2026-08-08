@@ -1,7 +1,6 @@
 package com.bgsoftware.superiorskyblock.core.menu;
 
 import com.bgsoftware.superiorskyblock.api.menu.PagedMenu;
-import com.bgsoftware.superiorskyblock.api.menu.button.click.ButtonClickContext;
 import com.bgsoftware.superiorskyblock.api.menu.button.MenuViewButton;
 import com.bgsoftware.superiorskyblock.api.menu.button.PagedMenuTemplateButton;
 import com.bgsoftware.superiorskyblock.api.menu.button.PagedMenuViewButton;
@@ -10,6 +9,7 @@ import com.bgsoftware.superiorskyblock.api.menu.layout.PagedMenuLayout;
 import com.bgsoftware.superiorskyblock.api.menu.view.ViewArgs;
 import com.bgsoftware.superiorskyblock.core.menu.view.AbstractPagedMenuView;
 import com.google.common.base.Preconditions;
+import org.bukkit.event.inventory.InventoryClickEvent;
 
 import java.util.List;
 
@@ -25,7 +25,7 @@ public abstract class AbstractPagedMenu<V extends AbstractPagedMenuView<V, A, E>
     }
 
     @Override
-    public boolean onPreButtonClick(MenuViewButton<V> menuButton, ButtonClickContext<V> context) {
+    public boolean onPreButtonClick(MenuViewButton<V> menuButton, InventoryClickEvent clickEvent) {
         if (!(menuButton instanceof PagedMenuViewButton))
             return true;
 

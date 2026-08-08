@@ -6,7 +6,6 @@ import com.bgsoftware.superiorskyblock.api.service.placeholders.PlaceholdersServ
 import com.bgsoftware.superiorskyblock.core.LazyReference;
 import com.bgsoftware.superiorskyblock.core.Text;
 import com.bgsoftware.superiorskyblock.core.formatting.Formatters;
-import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 
 import java.math.BigDecimal;
@@ -18,8 +17,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class MessageContent {
-
-    private static final Object[] EMPTY_ARGS = new Object[0];
 
     public static final MessageContent EMPTY = new MessageContent(Collections.emptyList()) {
         @Override
@@ -38,7 +35,6 @@ public class MessageContent {
     private static final Pattern DEFAULT_PLACEHOLDER_PATTERN = Pattern.compile("\\{(\\d+)}");
 
     private final List<IPart> contentParts = new LinkedList<>();
-    private final boolean legacyColorCodes;
 
     public static List<MessageContent> parse(List<String> contents) {
         List<MessageContent> messageContentsList = new LinkedList<>();
@@ -52,7 +48,6 @@ public class MessageContent {
 
         List<IPart> parts = new LinkedList<>();
         int lastPartIdx = 0;
-        boolean legacyColorCodes = false;
 
         while (matcher.find()) {
             StringBuilder previousPart = new StringBuilder(content.substring(lastPartIdx, matcher.start()));
@@ -66,47 +61,22 @@ public class MessageContent {
                 previousPart.append(matcher.group());
             }
 
-            if (previousPart.length() > 0) {
-                String previous = previousPart.toString();
-
-                if (previous.indexOf(ChatColor.COLOR_CHAR) >= 0) {
-                    legacyColorCodes = true;
-                }
-
-                parts.add(new StaticPart(previous));
-            }
-
-            if (argumentPart != null) {
+            if (previousPart.length() > 0)
+                parts.add(new StaticPart(previousPart.toString()));
+            if (argumentPart != null)
                 parts.add(argumentPart);
-            }
 
             lastPartIdx = matcher.end();
         }
 
-        if (lastPartIdx < content.length()) {
-            String remaining = content.substring(lastPartIdx);
+        if (lastPartIdx < content.length())
+            parts.add(new StaticPart(content.substring(lastPartIdx)));
 
-            if (remaining.indexOf(ChatColor.COLOR_CHAR) >= 0) {
-                legacyColorCodes = true;
-            }
-
-            parts.add(new StaticPart(remaining));
-        }
-
-        return new MessageContent(parts, legacyColorCodes);
+        return new MessageContent(parts);
     }
 
     private MessageContent(List<IPart> contentParts) {
-        this(contentParts, false);
-    }
-
-    private MessageContent(List<IPart> contentParts, boolean legacyColorCodes) {
         this.contentParts.addAll(contentParts);
-        this.legacyColorCodes = legacyColorCodes;
-    }
-
-    public Optional<String> getContent(@Nullable OfflinePlayer offlinePlayer) {
-        return getContent(offlinePlayer, EMPTY_ARGS);
     }
 
     public Optional<String> getContent(@Nullable OfflinePlayer offlinePlayer, Object... arguments) {
@@ -134,10 +104,6 @@ public class MessageContent {
         return Optional.of(content.toString());
     }
 
-    public boolean hasLegacyColorCodes() {
-        return legacyColorCodes;
-    }
-
     public static String getArgumentString(Object argument) {
         return argument instanceof BigDecimal ?
                 Formatters.NUMBER_FORMATTER.format((BigDecimal) argument) :
@@ -151,7 +117,7 @@ public class MessageContent {
     private static class StaticPart implements IPart {
 
         private final String content;
-        private final boolean parsePlaceholders;
+        private boolean parsePlaceholders;
 
         StaticPart(String content) {
             this.content = content;

@@ -91,7 +91,6 @@ import com.bgsoftware.superiorskyblock.api.events.IslandWorthUpdateEvent;
 import com.bgsoftware.superiorskyblock.api.events.MissionCompleteEvent;
 import com.bgsoftware.superiorskyblock.api.events.MissionResetEvent;
 import com.bgsoftware.superiorskyblock.api.events.PlayerChangeBorderColorEvent;
-import com.bgsoftware.superiorskyblock.api.events.PlayerChangeChatStateEvent;
 import com.bgsoftware.superiorskyblock.api.events.PlayerChangeLanguageEvent;
 import com.bgsoftware.superiorskyblock.api.events.PlayerChangeNameEvent;
 import com.bgsoftware.superiorskyblock.api.events.PlayerChangeRoleEvent;
@@ -213,7 +212,6 @@ import static com.bgsoftware.superiorskyblock.core.events.args.PluginEventArgs.I
 import static com.bgsoftware.superiorskyblock.core.events.args.PluginEventArgs.MissionComplete;
 import static com.bgsoftware.superiorskyblock.core.events.args.PluginEventArgs.MissionReset;
 import static com.bgsoftware.superiorskyblock.core.events.args.PluginEventArgs.PlayerChangeBorderColor;
-import static com.bgsoftware.superiorskyblock.core.events.args.PluginEventArgs.PlayerChangeChatState;
 import static com.bgsoftware.superiorskyblock.core.events.args.PluginEventArgs.PlayerChangeLanguage;
 import static com.bgsoftware.superiorskyblock.core.events.args.PluginEventArgs.PlayerChangeName;
 import static com.bgsoftware.superiorskyblock.core.events.args.PluginEventArgs.PlayerChangeRole;
@@ -314,7 +312,7 @@ public abstract class PluginEventType<Args extends PluginEventArgs> extends Even
     public static final PluginEventType<IslandBiomeChange> ISLAND_BIOME_CHANGE_EVENT = new PluginEventType<IslandBiomeChange>(IslandBiomeChangeEvent.class) {
         @Override
         public Event createBukkitEvent(IslandBiomeChange args) {
-            return new IslandBiomeChangeEvent(args.superiorPlayer, args.island, args.dimension, args.biome);
+            return new IslandBiomeChangeEvent(args.superiorPlayer, args.island, args.biome);
         }
 
         @Override
@@ -509,12 +507,6 @@ public abstract class PluginEventType<Args extends PluginEventArgs> extends Even
             pluginEvent.getArgs().roleLimit = ((IslandChangeRoleLimitEvent) bukkitEvent).getRoleLimit();
         }
     };
-    public static final PluginEventType<IslandChangeRolePrivilege> ISLAND_CHANGE_ROLE_PRIVILEGE_EVENT = new PluginEventType<IslandChangeRolePrivilege>(IslandChangeRolePrivilegeEvent.class) {
-        @Override
-        public Event createBukkitEvent(IslandChangeRolePrivilege args) {
-            return new IslandChangeRolePrivilegeEvent(args.island, args.superiorPlayer, args.playerRole);
-        }
-    };
     public static final PluginEventType<IslandChangeSpawnerRates> ISLAND_CHANGE_SPAWNER_RATES_EVENT = new PluginEventType<IslandChangeSpawnerRates>(IslandChangeSpawnerRatesEvent.class) {
         @Override
         public Event createBukkitEvent(IslandChangeSpawnerRates args) {
@@ -599,10 +591,16 @@ public abstract class PluginEventType<Args extends PluginEventArgs> extends Even
             pluginEvent.getArgs().worthBonus = ((IslandChangeWorthBonusEvent) bukkitEvent).getWorthBonus();
         }
     };
+    public static final PluginEventType<IslandChangeRolePrivilege> ISLAND_CHANGE_ROLE_PRIVILEGE_EVENT = new PluginEventType<IslandChangeRolePrivilege>(IslandChangeRolePrivilegeEvent.class) {
+        @Override
+        public Event createBukkitEvent(IslandChangeRolePrivilege args) {
+            return new IslandChangeRolePrivilegeEvent(args.island, args.superiorPlayer, args.playerRole);
+        }
+    };
     public static final PluginEventType<IslandChat> ISLAND_CHAT_EVENT = new PluginEventType<IslandChat>(IslandChatEvent.class) {
         @Override
         public Event createBukkitEvent(IslandChat args) {
-            return new IslandChatEvent(args.island, args.superiorPlayer, args.chatState, args.message);
+            return new IslandChatEvent(args.island, args.superiorPlayer, args.message);
         }
 
         @Override
@@ -997,14 +995,14 @@ public abstract class PluginEventType<Args extends PluginEventArgs> extends Even
         @Override
         public Event createBukkitEvent(IslandUpgrade args) {
             return new IslandUpgradeEvent(args.superiorPlayer, args.island, args.upgrade, args.nextLevel, args.commands,
-                    args.upgradeCause, args.upgradeCosts);
+                    args.upgradeCause, args.upgradeCost);
         }
 
         @Override
         public void applyBukkitToPluginEvent(Event bukkitEvent, PluginEvent<IslandUpgrade> pluginEvent) {
             super.applyBukkitToPluginEvent(bukkitEvent, pluginEvent);
             pluginEvent.getArgs().commands = ((IslandUpgradeEvent) bukkitEvent).getCommands();
-            pluginEvent.getArgs().upgradeCosts = ((IslandUpgradeEvent) bukkitEvent).getUpgradeCosts();
+            pluginEvent.getArgs().upgradeCost = ((IslandUpgradeEvent) bukkitEvent).getUpgradeCost();
         }
     };
     public static final PluginEventType<IslandVisitorHomeTeleport> ISLAND_VISITOR_HOME_TELEPORT_EVENT = new PluginEventType<IslandVisitorHomeTeleport>(IslandVisitorHomeTeleportEvent.class) {
@@ -1065,12 +1063,6 @@ public abstract class PluginEventType<Args extends PluginEventArgs> extends Even
         @Override
         public Event createBukkitEvent(PlayerChangeBorderColor args) {
             return new PlayerChangeBorderColorEvent(args.superiorPlayer, args.borderColor);
-        }
-    };
-    public static final PluginEventType<PlayerChangeChatState> PLAYER_CHANGE_CHAT_STATE_EVENT = new PluginEventType<PlayerChangeChatState>(PlayerChangeChatStateEvent.class) {
-        @Override
-        public Event createBukkitEvent(PlayerChangeChatState args) {
-            return new PlayerChangeChatStateEvent(args.superiorPlayer, args.newChatState);
         }
     };
     public static final PluginEventType<PlayerChangeLanguage> PLAYER_CHANGE_LANGUAGE_EVENT = new PluginEventType<PlayerChangeLanguage>(PlayerChangeLanguageEvent.class) {

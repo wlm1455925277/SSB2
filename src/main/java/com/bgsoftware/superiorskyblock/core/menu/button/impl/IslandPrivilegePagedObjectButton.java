@@ -5,7 +5,6 @@ import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.bgsoftware.superiorskyblock.api.island.IslandPrivilege;
 import com.bgsoftware.superiorskyblock.api.island.PermissionNode;
 import com.bgsoftware.superiorskyblock.api.island.PlayerRole;
-import com.bgsoftware.superiorskyblock.api.menu.button.click.ButtonClickContext;
 import com.bgsoftware.superiorskyblock.api.menu.button.MenuTemplateButton;
 import com.bgsoftware.superiorskyblock.api.menu.button.PagedMenuTemplateButton;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
@@ -22,9 +21,11 @@ import com.bgsoftware.superiorskyblock.island.role.SPlayerRole;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 
 public class IslandPrivilegePagedObjectButton extends AbstractPagedMenuButton<MenuIslandPrivileges.View, MenuIslandPrivileges.IslandPrivilegeInfo> {
@@ -42,13 +43,13 @@ public class IslandPrivilegePagedObjectButton extends AbstractPagedMenuButton<Me
     }
 
     @Override
-    public void onButtonClick(ButtonClickContext<MenuIslandPrivileges.View> context) {
-        this.actions.onButtonClick(context, this);
+    public void onButtonClick(InventoryClickEvent clickEvent) {
+        this.actions.onButtonClick(clickEvent, this);
     }
 
     @Override
-    public ItemStack modifyViewItem(ItemBuilder itemBuilder) {
-        return this.actions.modifyViewItem(this);
+    public ItemStack modifyViewItem(ItemStack buttonItem) {
+        return this.actions.modifyViewItem(buttonItem, this);
     }
 
     private static void onSuccessfulPermissionChange(IslandPrivilegePagedObjectButton button,
@@ -98,9 +99,9 @@ public class IslandPrivilegePagedObjectButton extends AbstractPagedMenuButton<Me
 
     private interface PrivilegeButtonActions {
 
-        void onButtonClick(ButtonClickContext<MenuIslandPrivileges.View> context, IslandPrivilegePagedObjectButton button);
+        void onButtonClick(InventoryClickEvent clickEvent, IslandPrivilegePagedObjectButton button);
 
-        ItemStack modifyViewItem(IslandPrivilegePagedObjectButton button);
+        ItemStack modifyViewItem(ItemStack buttonItem, IslandPrivilegePagedObjectButton button);
 
     }
 
@@ -109,7 +110,7 @@ public class IslandPrivilegePagedObjectButton extends AbstractPagedMenuButton<Me
         private static final RolePrivilegeButtonActions INSTANCE = new RolePrivilegeButtonActions();
 
         @Override
-        public void onButtonClick(ButtonClickContext<MenuIslandPrivileges.View> context, IslandPrivilegePagedObjectButton button) {
+        public void onButtonClick(InventoryClickEvent clickEvent, IslandPrivilegePagedObjectButton button) {
             IslandPrivilege islandPrivilege = button.pagedObject.getIslandPrivilege();
 
             if (islandPrivilege == null)
@@ -128,7 +129,7 @@ public class IslandPrivilegePagedObjectButton extends AbstractPagedMenuButton<Me
 
             PlayerRole newRole = null;
 
-            if (context.getClickType().isLeftClick()) {
+            if (clickEvent.getClick().isLeftClick()) {
                 newRole = currentRole;
                 do {
                     newRole = SPlayerRole.of(newRole.getWeight() - 1);
@@ -157,9 +158,9 @@ public class IslandPrivilegePagedObjectButton extends AbstractPagedMenuButton<Me
         }
 
         @Override
-        public ItemStack modifyViewItem(IslandPrivilegePagedObjectButton button) {
-            ItemBuilder itemBuilder = button.pagedObject.getRoleIslandPrivilegeItem();
-            if (itemBuilder == null)
+        public ItemStack modifyViewItem(ItemStack buttonItem, IslandPrivilegePagedObjectButton button) {
+            ItemBuilder permissionItem = button.pagedObject.getRoleIslandPrivilegeItem();
+            if (permissionItem == null)
                 return new ItemStack(Material.AIR);
 
             IslandPrivilege islandPrivilege = button.pagedObject.getIslandPrivilege();
@@ -168,12 +169,12 @@ public class IslandPrivilegePagedObjectButton extends AbstractPagedMenuButton<Me
             PlayerRole requiredRole = islandPrivilege == null ? null : island.getRequiredPlayerRole(islandPrivilege);
             IslandPrivilege.Type islandPrivilegeType = islandPrivilege == null ? null : islandPrivilege.getType();
 
-            itemBuilder.replaceAll("{}", requiredRole == null ? "" : requiredRole.toString());
+            permissionItem.replaceAll("{}", requiredRole == null ? "" : requiredRole.toString());
 
             if (!Menus.MENU_ISLAND_PRIVILEGES.getNoRolePermission().isEmpty() &&
                     !Menus.MENU_ISLAND_PRIVILEGES.getExactRolePermission().isEmpty() &&
                     !Menus.MENU_ISLAND_PRIVILEGES.getHigherRolePermission().isEmpty()) {
-                List<String> roles = new LinkedList<>();
+                List<String> roleString = new ArrayList<>();
 
                 int roleWeight = requiredRole == null ? Integer.MAX_VALUE : requiredRole.getWeight();
 
@@ -183,18 +184,35 @@ public class IslandPrivilegePagedObjectButton extends AbstractPagedMenuButton<Me
                         continue;
 
                     if (i < roleWeight) {
-                        roles.add(Menus.MENU_ISLAND_PRIVILEGES.getNoRolePermission().replace("{}", currentRole + ""));
+                        roleString.add(Menus.MENU_ISLAND_PRIVILEGES.getNoRolePermission().replace("{}", currentRole + ""));
                     } else if (i == roleWeight) {
-                        roles.add(Menus.MENU_ISLAND_PRIVILEGES.getExactRolePermission().replace("{}", currentRole + ""));
+                        roleString.add(Menus.MENU_ISLAND_PRIVILEGES.getExactRolePermission().replace("{}", currentRole + ""));
                     } else {
-                        roles.add(Menus.MENU_ISLAND_PRIVILEGES.getHigherRolePermission().replace("{}", currentRole + ""));
+                        roleString.add(Menus.MENU_ISLAND_PRIVILEGES.getHigherRolePermission().replace("{}", currentRole + ""));
                     }
                 }
 
-                itemBuilder.replaceLoreWithLines("{0}", roles);
+                ItemMeta itemMeta = permissionItem.getItemMeta();
+
+                if (itemMeta != null) {
+                    List<String> lore = itemMeta.getLore();
+
+                    for (int i = 0; i < lore.size(); i++) {
+                        String line = lore.get(i);
+                        if (line.equals("{0}")) {
+                            lore.set(i, roleString.get(0));
+                            for (int j = 1; j < roleString.size(); j++) {
+                                lore.add(i + j, roleString.get(j));
+                            }
+                            i += roleString.size();
+                        }
+                    }
+
+                    permissionItem.withLore(lore);
+                }
             }
 
-            return itemBuilder.build(button.menuView.getInventoryViewer());
+            return permissionItem.build(button.menuView.getInventoryViewer());
         }
 
     }
@@ -204,7 +222,7 @@ public class IslandPrivilegePagedObjectButton extends AbstractPagedMenuButton<Me
         private static final PlayerPrivilegeButtonActions INSTANCE = new PlayerPrivilegeButtonActions();
 
         @Override
-        public void onButtonClick(ButtonClickContext<MenuIslandPrivileges.View> context, IslandPrivilegePagedObjectButton button) {
+        public void onButtonClick(InventoryClickEvent clickEvent, IslandPrivilegePagedObjectButton button) {
             IslandPrivilege islandPrivilege = button.pagedObject.getIslandPrivilege();
 
             if (islandPrivilege == null)
@@ -233,7 +251,7 @@ public class IslandPrivilegePagedObjectButton extends AbstractPagedMenuButton<Me
         }
 
         @Override
-        public ItemStack modifyViewItem(IslandPrivilegePagedObjectButton button) {
+        public ItemStack modifyViewItem(ItemStack buttonItem, IslandPrivilegePagedObjectButton button) {
             IslandPrivilege islandPrivilege = button.pagedObject.getIslandPrivilege();
             Island targetIsland = button.menuView.getIsland();
             SuperiorPlayer permissiblePlayer = (SuperiorPlayer) button.menuView.getPermissionHolder();
@@ -253,7 +271,8 @@ public class IslandPrivilegePagedObjectButton extends AbstractPagedMenuButton<Me
 
         @Override
         public PagedMenuTemplateButton<MenuIslandPrivileges.View, MenuIslandPrivileges.IslandPrivilegeInfo> build() {
-            return new PagedMenuTemplateButtonImpl<>(this, IslandPrivilegePagedObjectButton.class,
+            return new PagedMenuTemplateButtonImpl<>(buttonItem, clickSound, commands, requiredPermission,
+                    lackPermissionSound, nullItem, getButtonIndex(), IslandPrivilegePagedObjectButton.class,
                     IslandPrivilegePagedObjectButton::new);
         }
 

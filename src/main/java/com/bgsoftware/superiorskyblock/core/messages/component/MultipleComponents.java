@@ -1,62 +1,83 @@
 package com.bgsoftware.superiorskyblock.core.messages.component;
 
-import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.service.bossbar.BossBar;
 import com.bgsoftware.superiorskyblock.api.service.message.IMessageComponent;
-import com.bgsoftware.superiorskyblock.api.service.message.MessagesService;
-import com.bgsoftware.superiorskyblock.core.EnumHelper;
-import com.bgsoftware.superiorskyblock.core.LazyReference;
 import com.bgsoftware.superiorskyblock.core.formatting.Formatters;
-import com.bgsoftware.superiorskyblock.core.menu.parser.MenuParserUtils;
+import com.bgsoftware.superiorskyblock.core.io.MenuParserImpl;
+import com.bgsoftware.superiorskyblock.core.messages.component.impl.ActionBarComponent;
+import com.bgsoftware.superiorskyblock.core.messages.component.impl.BossBarComponent;
+import com.bgsoftware.superiorskyblock.core.messages.component.impl.ComplexMessageComponent;
+import com.bgsoftware.superiorskyblock.core.messages.component.impl.SoundComponent;
+import com.bgsoftware.superiorskyblock.core.messages.component.impl.TitleComponent;
+import com.bgsoftware.superiorskyblock.service.message.MessagesServiceImpl;
+import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.HoverEvent;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Locale;
+import java.util.Optional;
 
 public class MultipleComponents implements IMessageComponent {
 
-    private static final LazyReference<MessagesService> messagesService = new LazyReference<MessagesService>() {
-        @Override
-        protected MessagesService create() {
-            return SuperiorSkyblockPlugin.getPlugin().getServices().getService(MessagesService.class);
-        }
-    };
-
     private final List<IMessageComponent> messageComponents;
 
-    public static IMessageComponent parseSection(ConfigurationSection section) {
-        MessagesService.Builder builder = messagesService.get().newBuilder();
+    public static IMessageComponent parseSection(ConfigurationSection section, List<MessagesServiceImpl.CustomComponentParser> customComponentParsers) {
+        List<IMessageComponent> messageComponents = new LinkedList<>();
 
         for (String key : section.getKeys(false)) {
             switch (key) {
                 case "action-bar": {
                     String text = section.getString(key + ".text");
+                    boolean parsed = false;
 
-                    builder.addActionBar(Formatters.COLOR_FORMATTER.format(text));
+                    for (MessagesServiceImpl.CustomComponentParser parser : customComponentParsers) {
+                        Optional<IMessageComponent> res = parser.parseActionBar(text);
+                        if (res.isPresent()) {
+                            messageComponents.add(res.get());
+                            parsed = true;
+                            break;
+                        }
+                    }
+
+                    if (!parsed) {
+                        messageComponents.add(ActionBarComponent.of(Formatters.COLOR_FORMATTER.format(text)));
+                    }
                     break;
                 }
                 case "bossbar": {
                     String message = section.getString(key + ".message");
-                    String color = section.getString(key + ".color", "PINK").toUpperCase(Locale.ENGLISH);
-                    String style = section.getString(key + ".style", "PROGRESS").toUpperCase(Locale.ENGLISH);
+                    String color = section.getString(key + ".color", "PINK").toUpperCase();
+                    String overlay = section.getString(key + ".overlay", "PROGRESS").toUpperCase();
                     int ticks = section.getInt(key + ".ticks");
+                    boolean parsed = false;
 
-                    BossBar.Color bossBarColor = EnumHelper.getEnum(BossBar.Color.class, color);
-                    if (bossBarColor == null) {
-                        bossBarColor = BossBar.Color.PINK;
+                    for (MessagesServiceImpl.CustomComponentParser parser : customComponentParsers) {
+                        Optional<IMessageComponent> res = parser.parseBossBar(message, color, overlay, ticks);
+                        if (res.isPresent()) {
+                            messageComponents.add(res.get());
+                            parsed = true;
+                            break;
+                        }
                     }
 
-                    BossBar.Style bossBarStyle = EnumHelper.getEnum(BossBar.Style.class, style);
-                    if (bossBarStyle == null) {
-                        bossBarStyle = BossBar.Style.SOLID;
-                    }
+                    if (!parsed) {
+                        BossBar.Color bossBarColor;
+                        try {
+                            bossBarColor = BossBar.Color.valueOf(color);
+                        } catch (Exception error) {
+                            bossBarColor = BossBar.Color.PINK;
+                        }
 
-                    builder.addBossBar(Formatters.COLOR_FORMATTER.format(message), bossBarColor, bossBarStyle, ticks);
+                        messageComponents.add(BossBarComponent.of(Formatters.COLOR_FORMATTER.format(message), bossBarColor, BossBar.Style.SOLID, ticks));
+                    }
                     break;
                 }
                 case "sound":
-                    builder.addSound(MenuParserUtils.getSound(section.getConfigurationSection("sound")));
+                    messageComponents.add(SoundComponent.of(MenuParserImpl.getInstance().getSound(section.getConfigurationSection("sound"))));
                     break;
                 case "title": {
                     String title = section.getString(key + ".title");
@@ -64,24 +85,64 @@ public class MultipleComponents implements IMessageComponent {
                     int fadeIn = section.getInt(key + ".fade-in");
                     int duration = section.getInt(key + ".duration");
                     int fadeOut = section.getInt(key + ".fade-out");
+                    boolean parsed = false;
 
-                    builder.addTitle(Formatters.COLOR_FORMATTER.format(title),
-                            Formatters.COLOR_FORMATTER.format(subtitle), fadeIn, duration, fadeOut);
+                    for (MessagesServiceImpl.CustomComponentParser parser : customComponentParsers) {
+                        Optional<IMessageComponent> res = parser.parseTitle(title, subtitle, fadeIn, duration, fadeOut);
+                        if (res.isPresent()) {
+                            messageComponents.add(res.get());
+                            parsed = true;
+                            break;
+                        }
+                    }
+
+                    if (!parsed) {
+                        messageComponents.add(TitleComponent.of(Formatters.COLOR_FORMATTER.format(title),
+                                Formatters.COLOR_FORMATTER.format(subtitle), fadeIn, duration, fadeOut));
+                    }
                     break;
                 }
                 default: {
                     String text = section.getString(key + ".text");
-                    String command = section.getString(key + ".command");
-                    String suggest = section.getString(key + ".suggest");
+
+                    for (MessagesServiceImpl.CustomComponentParser parser : customComponentParsers) {
+                        Optional<IMessageComponent> res = parser.parseRawMessage(text);
+                        if (res.isPresent()) {
+                            messageComponents.add(res.get());
+                            break;
+                        }
+                    }
+
+                    BaseComponent[] baseComponents = TextComponent.fromLegacyText(Formatters.COLOR_FORMATTER.format(text));
+
                     String tooltip = section.getString(key + ".tooltip");
-                    builder.addComplexMessage(Formatters.COLOR_FORMATTER.format(text), command, suggest,
-                            Formatters.COLOR_FORMATTER.format(tooltip));
+                    if (tooltip != null) {
+                        for (BaseComponent baseComponent : baseComponents)
+                            baseComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                                    new BaseComponent[]{new TextComponent(Formatters.COLOR_FORMATTER.format(tooltip))}));
+                    }
+
+                    String command = section.getString(key + ".command");
+                    if (command != null) {
+                        for (BaseComponent baseComponent : baseComponents)
+                            baseComponent.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command));
+                    }
+
+                    String suggest = section.getString(key + ".suggest");
+                    if (suggest != null) {
+                        for (BaseComponent baseComponent : baseComponents)
+                            baseComponent.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, suggest));
+                    }
+
+                    messageComponents.add(ComplexMessageComponent.of(baseComponents));
                     break;
                 }
             }
         }
 
-        return builder.build();
+        messageComponents.removeIf(component -> component.getType() == Type.EMPTY);
+
+        return of(messageComponents);
     }
 
     public static IMessageComponent of(List<IMessageComponent> messageComponents) {

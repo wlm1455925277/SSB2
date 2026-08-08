@@ -5,6 +5,7 @@ import com.bgsoftware.superiorskyblock.api.enums.TopIslandMembersSorting;
 import com.bgsoftware.superiorskyblock.api.handlers.BlockValuesManager;
 import com.bgsoftware.superiorskyblock.api.island.SortingType;
 import com.bgsoftware.superiorskyblock.api.key.Key;
+import com.bgsoftware.superiorskyblock.api.key.KeySet;
 import com.bgsoftware.superiorskyblock.api.objects.Pair;
 import com.bgsoftware.superiorskyblock.api.player.inventory.ClearAction;
 import com.bgsoftware.superiorskyblock.api.player.respawn.RespawnAction;
@@ -133,6 +134,14 @@ public class GlobalSection extends SettingsContainerHolder {
 
     public boolean isTransferConfirm() {
         return getContainer().transferConfirm;
+    }
+
+    public String getSpawnersProvider() {
+        return getContainer().spawnersProvider;
+    }
+
+    public String getStackedBlocksProvider() {
+        return getContainer().stackedBlocksProvider;
     }
 
     public boolean isTeleportOnCreate() {
@@ -297,18 +306,6 @@ public class GlobalSection extends SettingsContainerHolder {
 
     public boolean isObsidianToLava() {
         return getContainer().obsidianToLava;
-    }
-
-    public String getSpawnersProvider() {
-        return getContainer().spawnersProvider;
-    }
-
-    public String getStackedBlocksProvider() {
-        return getContainer().stackedBlocksProvider;
-    }
-
-    public String getPricesProvider() {
-        return getContainer().pricesProvider;
     }
 
     public BlockValuesManager.SyncWorthStatus getSyncWorth() {

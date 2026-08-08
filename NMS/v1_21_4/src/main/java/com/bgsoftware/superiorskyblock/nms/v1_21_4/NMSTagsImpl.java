@@ -35,7 +35,7 @@ public class NMSTagsImpl extends com.bgsoftware.superiorskyblock.nms.v1_21_4.Abs
 
         itemStack.set(DataComponents.PROFILE, resolvableProfile);
 
-        return CraftItemStack.asCraftMirror(itemStack);
+        return CraftItemStack.asBukkitCopy(itemStack);
     }
 
     @Override

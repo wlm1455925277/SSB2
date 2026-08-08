@@ -11,6 +11,7 @@ import com.bgsoftware.superiorskyblock.api.menu.view.MenuView;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
 import com.bgsoftware.superiorskyblock.core.Materials;
 import com.bgsoftware.superiorskyblock.core.formatting.Formatters;
+import com.bgsoftware.superiorskyblock.core.io.MenuParserImpl;
 import com.bgsoftware.superiorskyblock.core.itemstack.ItemSkulls;
 import com.bgsoftware.superiorskyblock.core.key.KeyIndicator;
 import com.bgsoftware.superiorskyblock.core.key.Keys;
@@ -18,11 +19,10 @@ import com.bgsoftware.superiorskyblock.core.key.set.KeySets;
 import com.bgsoftware.superiorskyblock.core.menu.AbstractMenu;
 import com.bgsoftware.superiorskyblock.core.menu.MenuIdentifiers;
 import com.bgsoftware.superiorskyblock.core.menu.MenuParseResult;
-import com.bgsoftware.superiorskyblock.core.menu.MenuSlotsMap;
+import com.bgsoftware.superiorskyblock.core.menu.MenuPatternSlots;
 import com.bgsoftware.superiorskyblock.core.menu.button.impl.ValuesButton;
 import com.bgsoftware.superiorskyblock.core.menu.converter.MenuConverter;
 import com.bgsoftware.superiorskyblock.core.menu.layout.AbstractMenuLayout;
-import com.bgsoftware.superiorskyblock.core.menu.parser.MenuParserImpl;
 import com.bgsoftware.superiorskyblock.core.menu.view.AbstractMenuView;
 import com.bgsoftware.superiorskyblock.core.menu.view.IIslandMenuView;
 import com.bgsoftware.superiorskyblock.core.menu.view.IPlayerMenuView;
@@ -61,7 +61,7 @@ public class MenuIslandValues extends AbstractMenu<MenuIslandValues.View, Island
             return null;
         }
 
-        MenuSlotsMap menuSlotsMap = menuParseResult.getPatternSlots();
+        MenuPatternSlots menuPatternSlots = menuParseResult.getPatternSlots();
         YamlConfiguration cfg = menuParseResult.getConfig();
         MenuLayout.Builder<View> patternBuilder = menuParseResult.getLayoutBuilder();
 
@@ -79,7 +79,7 @@ public class MenuIslandValues extends AbstractMenu<MenuIslandValues.View, Island
                 Key blockKey = Keys.ofMaterialAndData(block);
                 keysToUpdate.add(blockKey);
 
-                patternBuilder.mapButtons(menuSlotsMap.getSlots(itemsSectionName), new ValuesButton.Builder(blockKey));
+                patternBuilder.mapButtons(menuPatternSlots.getSlots(itemsSectionName), new ValuesButton.Builder(blockKey));
             }
         }
 
@@ -115,13 +115,10 @@ public class MenuIslandValues extends AbstractMenu<MenuIslandValues.View, Island
         }
 
         @Override
-        public void updateTitleArgs() {
-            if (this.cachedTitleArgs == null) {
-                this.cachedTitleArgs = new Object[3];
-            }
-            this.cachedTitleArgs[0] = island.getOwner().getName();
-            this.cachedTitleArgs[1] = Formatters.NUMBER_FORMATTER.format(island.getWorth());
-            this.cachedTitleArgs[2] = Formatters.FANCY_NUMBER_FORMATTER.format(island.getWorth(), getInventoryViewer().getUserLocale());
+        public String replaceTitle(String title) {
+            return title.replace("{0}", island.getOwner().getName())
+                    .replace("{1}", Formatters.NUMBER_FORMATTER.format(island.getWorth()))
+                    .replace("{2}", Formatters.FANCY_NUMBER_FORMATTER.format(island.getWorth(), getInventoryViewer().getUserLocale()));
         }
 
     }

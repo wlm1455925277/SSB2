@@ -1,12 +1,16 @@
 package com.bgsoftware.superiorskyblock.core.menu.button.impl;
 
-import com.bgsoftware.superiorskyblock.api.menu.button.click.ButtonClickContext;
+import com.bgsoftware.common.annotations.Nullable;
 import com.bgsoftware.superiorskyblock.api.menu.button.MenuTemplateButton;
+import com.bgsoftware.superiorskyblock.api.world.GameSound;
+import com.bgsoftware.superiorskyblock.core.menu.TemplateItem;
 import com.bgsoftware.superiorskyblock.core.menu.button.AbstractMenuTemplateButton;
 import com.bgsoftware.superiorskyblock.core.menu.button.AbstractMenuViewButton;
 import com.bgsoftware.superiorskyblock.core.menu.button.MenuTemplateButtonImpl;
 import com.bgsoftware.superiorskyblock.core.menu.view.impl.IslandMenuView;
+import org.bukkit.event.inventory.InventoryClickEvent;
 
+import java.util.List;
 import java.util.Objects;
 
 public class ControlPanelButton extends AbstractMenuViewButton<IslandMenuView> {
@@ -21,16 +25,16 @@ public class ControlPanelButton extends AbstractMenuViewButton<IslandMenuView> {
     }
 
     @Override
-    public void onButtonClick(ButtonClickContext<IslandMenuView> context) {
+    public void onButtonClick(InventoryClickEvent clickEvent) {
         switch (getTemplate().controlPanelAction) {
             case OPEN_MEMBERS:
-                plugin.getCommands().dispatchSubCommand(context.getPlayer(), "members");
+                plugin.getCommands().dispatchSubCommand(clickEvent.getWhoClicked(), "members");
                 break;
             case OPEN_SETTINGS:
-                plugin.getCommands().dispatchSubCommand(context.getPlayer(), "settings");
+                plugin.getCommands().dispatchSubCommand(clickEvent.getWhoClicked(), "settings");
                 break;
             case OPEN_VISITORS:
-                plugin.getCommands().dispatchSubCommand(context.getPlayer(), "visitors");
+                plugin.getCommands().dispatchSubCommand(clickEvent.getWhoClicked(), "visitors");
                 break;
         }
     }
@@ -54,7 +58,7 @@ public class ControlPanelButton extends AbstractMenuViewButton<IslandMenuView> {
 
         @Override
         public MenuTemplateButton<IslandMenuView> build() {
-            return new Template(this, controlPanelAction);
+            return new Template(buttonItem, clickSound, commands, requiredPermission, lackPermissionSound, controlPanelAction);
         }
 
     }
@@ -63,8 +67,11 @@ public class ControlPanelButton extends AbstractMenuViewButton<IslandMenuView> {
 
         private final ControlPanelAction controlPanelAction;
 
-        Template(AbstractBuilder<IslandMenuView> builder, ControlPanelAction controlPanelAction) {
-            super(builder, ControlPanelButton.class, ControlPanelButton::new);
+        Template(@Nullable TemplateItem buttonItem, @Nullable GameSound clickSound, @Nullable List<String> commands,
+                 @Nullable String requiredPermission, @Nullable GameSound lackPermissionSound,
+                 ControlPanelAction controlPanelAction) {
+            super(buttonItem, clickSound, commands, requiredPermission, lackPermissionSound,
+                    ControlPanelButton.class, ControlPanelButton::new);
             this.controlPanelAction = Objects.requireNonNull(controlPanelAction, "controlPanelAction cannot be null");
         }
 

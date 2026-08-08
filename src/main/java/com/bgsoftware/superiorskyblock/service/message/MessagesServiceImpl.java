@@ -1,18 +1,20 @@
 package com.bgsoftware.superiorskyblock.service.message;
 
 import com.bgsoftware.common.annotations.Nullable;
-import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.service.bossbar.BossBar;
 import com.bgsoftware.superiorskyblock.api.service.message.IMessageComponent;
 import com.bgsoftware.superiorskyblock.api.service.message.MessagesService;
-import com.bgsoftware.superiorskyblock.api.world.GameSound;
 import com.bgsoftware.superiorskyblock.core.EnumHelper;
 import com.bgsoftware.superiorskyblock.core.GameSoundImpl;
 import com.bgsoftware.superiorskyblock.core.formatting.Formatters;
 import com.bgsoftware.superiorskyblock.core.messages.Message;
-import com.bgsoftware.superiorskyblock.core.messages.component.BossBarComponent;
 import com.bgsoftware.superiorskyblock.core.messages.component.MultipleComponents;
-import com.bgsoftware.superiorskyblock.core.messages.component.SoundComponent;
+import com.bgsoftware.superiorskyblock.core.messages.component.impl.ActionBarComponent;
+import com.bgsoftware.superiorskyblock.core.messages.component.impl.BossBarComponent;
+import com.bgsoftware.superiorskyblock.core.messages.component.impl.ComplexMessageComponent;
+import com.bgsoftware.superiorskyblock.core.messages.component.impl.RawMessageComponent;
+import com.bgsoftware.superiorskyblock.core.messages.component.impl.SoundComponent;
+import com.bgsoftware.superiorskyblock.core.messages.component.impl.TitleComponent;
 import com.bgsoftware.superiorskyblock.service.IService;
 import com.google.common.base.Preconditions;
 import net.md_5.bungee.api.chat.BaseComponent;
@@ -23,13 +25,14 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 public class MessagesServiceImpl implements MessagesService, IService {
 
-    private final SuperiorSkyblockPlugin plugin;
+    private final List<CustomComponentParser> customComponentParsers = new LinkedList<>();
 
-    public MessagesServiceImpl(SuperiorSkyblockPlugin plugin) {
-        this.plugin = plugin;
+    public MessagesServiceImpl() {
+
     }
 
     @Override
@@ -41,10 +44,14 @@ public class MessagesServiceImpl implements MessagesService, IService {
     @Override
     public IMessageComponent parseComponent(YamlConfiguration config, String path) {
         if (config.isConfigurationSection(path)) {
-            return MultipleComponents.parseSection(config.getConfigurationSection(path));
+            return MultipleComponents.parseSection(config.getConfigurationSection(path), this.customComponentParsers);
         } else {
-            return plugin.getProviders().getUIProvider()
-                    .createRawMessageComponent(Formatters.COLOR_FORMATTER.format(config.getString(path)));
+            for (CustomComponentParser parser : this.customComponentParsers) {
+                Optional<IMessageComponent> res = parser.parse(config, path);
+                if (res.isPresent())
+                    return res.get();
+            }
+            return RawMessageComponent.of(Formatters.COLOR_FORMATTER.format(config.getString(path, "")));
         }
     }
 
@@ -60,25 +67,40 @@ public class MessagesServiceImpl implements MessagesService, IService {
         return new BuilderImpl();
     }
 
+    public void registerCustomComponentParser(CustomComponentParser parser) {
+        this.customComponentParsers.add(parser);
+    }
+
+    public List<CustomComponentParser> getCustomComponentParsers() {
+        return customComponentParsers;
+    }
+
+    public interface CustomComponentParser {
+
+        Optional<IMessageComponent> parse(YamlConfiguration config, String path);
+
+        Optional<IMessageComponent> parseActionBar(String text);
+
+        Optional<IMessageComponent> parseBossBar(String message, String color, String overlay, int ticks);
+
+        Optional<IMessageComponent> parseRawMessage(String raw);
+
+        Optional<IMessageComponent> parseTitle(String title, String subtitle, int fadeIn, int duration, int fadeOut);
+
+    }
+
     private static class BuilderImpl implements Builder {
 
-        private static final SuperiorSkyblockPlugin plugin = SuperiorSkyblockPlugin.getPlugin();
         private final List<IMessageComponent> messageComponents = new LinkedList<>();
 
         @Override
         public boolean addActionBar(@Nullable String message) {
-            return addMessageComponent(plugin.getProviders().getUIProvider()
-                    .createActionBarComponent(message));
+            return addMessageComponent(ActionBarComponent.of(message));
         }
 
         @Override
-        public boolean addBossBar(@Nullable String message, BossBar.Color color, int duration) {
-            return addBossBar(message, color, BossBar.Style.SOLID, duration);
-        }
-
-        @Override
-        public boolean addBossBar(@Nullable String message, BossBar.Color color, BossBar.Style style, int duration) {
-            return addMessageComponent(BossBarComponent.of(message, color, style, duration));
+        public boolean addBossBar(@Nullable String message, BossBar.Color color, int ticks) {
+            return addMessageComponent(BossBarComponent.of(message, color, BossBar.Style.SOLID, ticks));
         }
 
         @Override
@@ -88,38 +110,22 @@ public class MessagesServiceImpl implements MessagesService, IService {
 
         @Override
         public boolean addComplexMessage(@Nullable BaseComponent[] baseComponents) {
-            return addMessageComponent(plugin.getProviders().getUIProvider()
-                    .createComplexMessageComponent(baseComponents));
-        }
-
-        @Override
-        public boolean addComplexMessage(@Nullable String message, @Nullable String command, @Nullable String suggest,
-                                         @Nullable String tooltip) {
-            return addMessageComponent(plugin.getProviders().getUIProvider()
-                    .createComplexMessageComponent(message, command, suggest, tooltip));
+            return addMessageComponent(ComplexMessageComponent.of(baseComponents));
         }
 
         @Override
         public boolean addRawMessage(@Nullable String message) {
-            return addMessageComponent(plugin.getProviders().getUIProvider()
-                    .createRawMessageComponent(message));
+            return addMessageComponent(RawMessageComponent.of(message));
         }
 
         @Override
         public boolean addSound(Sound sound, float volume, float pitch) {
-            return addSound(new GameSoundImpl(sound, volume, pitch));
+            return addMessageComponent(SoundComponent.of(new GameSoundImpl(sound, volume, pitch)));
         }
 
         @Override
-        public boolean addSound(@Nullable GameSound gameSound) {
-            return addMessageComponent(SoundComponent.of(gameSound));
-        }
-
-        @Override
-        public boolean addTitle(@Nullable String titleMessage, @Nullable String subtitleMessage,
-                                int fadeIn, int stay, int fadeOut) {
-            return addMessageComponent(plugin.getProviders().getUIProvider()
-                    .createTitleComponent(titleMessage, subtitleMessage, fadeIn, stay, fadeOut));
+        public boolean addTitle(@Nullable String titleMessage, @Nullable String subtitleMessage, int fadeIn, int duration, int fadeOut) {
+            return addMessageComponent(TitleComponent.of(titleMessage, subtitleMessage, fadeIn, duration, fadeOut));
         }
 
         @Override

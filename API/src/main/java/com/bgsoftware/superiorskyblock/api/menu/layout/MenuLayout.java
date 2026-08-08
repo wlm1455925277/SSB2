@@ -1,5 +1,6 @@
 package com.bgsoftware.superiorskyblock.api.menu.layout;
 
+import com.bgsoftware.superiorskyblock.api.SuperiorSkyblockAPI;
 import com.bgsoftware.superiorskyblock.api.menu.button.MenuTemplateButton;
 import com.bgsoftware.superiorskyblock.api.menu.view.MenuView;
 import org.bukkit.event.inventory.InventoryType;
@@ -10,14 +11,9 @@ import java.util.List;
 
 /**
  * The layout class is used to describe the layout of buttons for a menu.
- * See {@link InventoryMenuLayout} and {@link DialogMenuLayout} for layouts of specific menu types.
+ * It is later used by the plugin to create a new inventory for the menu.
  */
 public interface MenuLayout<V extends MenuView<V, ?>> {
-
-    /**
-     * Get the title of menu views created by this layout.
-     */
-    String getTitle();
 
     /**
      * Get a button by a slot.
@@ -35,29 +31,21 @@ public interface MenuLayout<V extends MenuView<V, ?>> {
 
     /**
      * Get the amount of rows for the layout.
-     *
-     * @deprecated See {@link InventoryMenuLayout}
      */
-    @Deprecated
     int getRowsCount();
 
     /**
      * Create a new inventory from this layout.
      *
      * @param menuView The view to create the inventory for.
-     * @deprecated See {@link InventoryMenuLayout}
      */
-    @Deprecated
     Inventory buildInventory(V menuView);
 
     /**
      * Create a new {@link Builder} object for a new {@link MenuLayout}.
-     *
-     * @deprecated See {@link InventoryMenuLayout} and {@link DialogMenuLayout}
      */
-    @Deprecated
     static <V extends MenuView<V, ?>> Builder<V> newBuilder() {
-        return InventoryMenuLayout.newBuilder();
+        return SuperiorSkyblockAPI.getMenus().createPatternBuilder();
     }
 
     interface Builder<V extends MenuView<V, ?>> {
@@ -68,6 +56,20 @@ public interface MenuLayout<V extends MenuView<V, ?>> {
          * @param title The title to set.
          */
         Builder<V> setTitle(String title);
+
+        /**
+         * Set the inventory type for menu views created by this layout.
+         *
+         * @param inventoryType The inventory type to set.
+         */
+        Builder<V> setInventoryType(InventoryType inventoryType);
+
+        /**
+         * Set the rows count for menu views created by this layout.
+         *
+         * @param rowsCount The amount of rows to set.
+         */
+        Builder<V> setRowsCount(int rowsCount);
 
         /**
          * Set a button in a slot for this layout.
@@ -113,29 +115,8 @@ public interface MenuLayout<V extends MenuView<V, ?>> {
         Builder<V> mapButtons(List<Integer> slots, MenuTemplateButton.Builder<V> buttonBuilder);
 
         /**
-         * Set the inventory type for menu views created by this layout.
-         *
-         * @param inventoryType The inventory type to set.
-         * @deprecated See {@link InventoryMenuLayout}
-         */
-        @Deprecated
-        Builder<V> setInventoryType(InventoryType inventoryType);
-
-        /**
-         * Set the rows count for menu views created by this layout.
-         *
-         * @param rowsCount The amount of rows to set.
-         * @deprecated See {@link InventoryMenuLayout}
-         */
-        @Deprecated
-        Builder<V> setRowsCount(int rowsCount);
-
-        /**
          * Get the {@link MenuLayout} from this builder.
-         *
-         * @deprecated See {@link InventoryMenuLayout} and {@link DialogMenuLayout}
          */
-        @Deprecated
         MenuLayout<V> build();
 
     }

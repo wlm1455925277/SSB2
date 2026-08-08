@@ -15,10 +15,11 @@ import com.bgsoftware.superiorskyblock.core.menu.button.MenuTemplateButtonImpl;
 import com.bgsoftware.superiorskyblock.core.menu.impl.MenuWarpCategoryManage;
 import com.bgsoftware.superiorskyblock.core.menu.view.MenuViewWrapper;
 import com.bgsoftware.superiorskyblock.core.messages.Message;
-import com.bgsoftware.superiorskyblock.api.menu.button.click.ButtonClickContext;
 import com.bgsoftware.superiorskyblock.player.chat.PlayerChat;
 import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 public class WarpCategoryManageIconButton extends AbstractMenuViewButton<MenuWarpCategoryManage.View> {
 
@@ -30,33 +31,33 @@ public class WarpCategoryManageIconButton extends AbstractMenuViewButton<MenuWar
     public ItemStack createViewItem() {
         WarpCategory warpCategory = menuView.getWarpCategory();
 
-        ItemBuilder newItemBuilder = new ItemBuilder(warpCategory.getRawIcon());
-        ItemBuilder itemBuilder = getButtonTemplateItem().getBuilder();
+        ItemBuilder itemBuilder = new ItemBuilder(warpCategory.getRawIcon());
+        ItemStack buttonItem = super.createViewItem();
 
-        if (itemBuilder != null) {
-            if (itemBuilder.hasDisplayName()) {
-                newItemBuilder.withName(itemBuilder.getDisplayName());
-            }
-            if (itemBuilder.hasLore()) {
-                newItemBuilder.appendLore(itemBuilder.getLore());
-            }
+        if (buttonItem != null && buttonItem.hasItemMeta()) {
+            ItemMeta itemMeta = buttonItem.getItemMeta();
+            if (itemMeta.hasDisplayName())
+                itemBuilder.withName(itemMeta.getDisplayName());
+
+            if (itemMeta.hasLore())
+                itemBuilder.appendLore(itemMeta.getLore());
         }
 
-        return newItemBuilder.build(menuView.getInventoryViewer());
+        return itemBuilder.build(warpCategory.getIsland().getOwner());
     }
 
     @Override
-    public void onButtonClick(ButtonClickContext<MenuWarpCategoryManage.View> context) {
+    public void onButtonClick(InventoryClickEvent clickEvent) {
         SuperiorPlayer inventoryViewer = menuView.getInventoryViewer();
         WarpCategory warpCategory = menuView.getWarpCategory();
 
-        if (context.getClickType().isRightClick()) {
+        if (clickEvent.getClick().isRightClick()) {
             menuView.setPreviousMove(false);
             plugin.getMenus().openWarpCategoryIconEdit(inventoryViewer, MenuViewWrapper.fromView(menuView), warpCategory);
             return;
         }
 
-        Player player = context.getPlayer();
+        Player player = (Player) clickEvent.getWhoClicked();
 
         Message.WARP_CATEGORY_SLOT.send(player);
 
@@ -106,8 +107,8 @@ public class WarpCategoryManageIconButton extends AbstractMenuViewButton<MenuWar
 
         @Override
         public MenuTemplateButton<MenuWarpCategoryManage.View> build() {
-            return new MenuTemplateButtonImpl<>(this, WarpCategoryManageIconButton.class,
-                    WarpCategoryManageIconButton::new);
+            return new MenuTemplateButtonImpl<>(buttonItem, clickSound, commands, requiredPermission,
+                    lackPermissionSound, WarpCategoryManageIconButton.class, WarpCategoryManageIconButton::new);
         }
 
     }

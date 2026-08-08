@@ -103,16 +103,13 @@ public class ClearActions {
         try {
             clearActions.forEach(clearAction -> clearAction.doClear(onlinePlayer));
 
-            if (islandToTeleport != null) {
-                if (offlinePlayerData != null) {
-                    WorldInfo worldInfo = plugin.getGrid().getIslandsWorldInfo(islandToTeleport, plugin.getSettings().getWorlds().getDefaultWorldDimension());
-                    if (worldInfo != null && Bukkit.getWorld(worldInfo.getName()) != null) {
-                        offlinePlayerData.setLocation(islandToTeleport.getCenter(worldInfo.getDimension()));
-                        offlinePlayerData.applyChanges();
-                    }
-                } else {
-                    superiorPlayer.teleport(islandToTeleport);
-                }
+            if (offlinePlayerData != null) {
+                WorldInfo worldInfo = plugin.getGrid().getIslandsWorldInfo(islandToTeleport, plugin.getSettings().getWorlds().getDefaultWorldDimension());
+                if (islandToTeleport != null && worldInfo != null && Bukkit.getWorld(worldInfo.getName()) != null)
+                    offlinePlayerData.setLocation(islandToTeleport.getCenter(worldInfo.getDimension()));
+                offlinePlayerData.applyChanges();
+            } else if (islandToTeleport != null) {
+                superiorPlayer.teleport(islandToTeleport);
             }
         } finally {
             if (offlinePlayerData != null)

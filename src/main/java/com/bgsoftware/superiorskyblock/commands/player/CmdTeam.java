@@ -1,6 +1,5 @@
 package com.bgsoftware.superiorskyblock.commands.player;
 
-import com.bgsoftware.common.annotations.Nullable;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.bgsoftware.superiorskyblock.api.island.PlayerRole;
@@ -8,19 +7,20 @@ import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
 import com.bgsoftware.superiorskyblock.commands.CommandTabCompletes;
 import com.bgsoftware.superiorskyblock.commands.ISuperiorCommand;
 import com.bgsoftware.superiorskyblock.commands.arguments.CommandArguments;
+import com.bgsoftware.superiorskyblock.core.collections.ArrayMap;
 import com.bgsoftware.superiorskyblock.core.formatting.Formatters;
 import com.bgsoftware.superiorskyblock.core.messages.Message;
 import com.bgsoftware.superiorskyblock.core.threads.BukkitExecutor;
-import com.bgsoftware.superiorskyblock.island.top.SortingComparators;
+import com.bgsoftware.superiorskyblock.island.role.SPlayerRole;
 import com.bgsoftware.superiorskyblock.player.PlayerLocales;
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
 
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
+import java.util.Map;
 
 public class CmdTeam implements ISuperiorCommand {
 
@@ -69,41 +69,45 @@ public class CmdTeam implements ISuperiorCommand {
         if (island == null)
             return;
 
-        SuperiorPlayer superiorPlayer = sender instanceof Player ? plugin.getPlayers().getSuperiorPlayer(sender) : null;
-        Locale locale = superiorPlayer != null ? superiorPlayer.getUserLocale() : PlayerLocales.getDefaultLocale();
+        BukkitExecutor.async(() -> {
+            java.util.Locale locale = PlayerLocales.getLocale(sender);
+            StringBuilder infoMessage = new StringBuilder();
 
-        List<SuperiorPlayer> members = island.getIslandMembers(true);
+            if (!Message.ISLAND_TEAM_STATUS_HEADER.isEmpty(locale)) {
+                infoMessage.append(Message.ISLAND_TEAM_STATUS_HEADER.getMessage(locale, island.getOwner().getName(),
+                        island.getIslandMembers(true).size(), island.getTeamLimit())).append("\n");
+            }
 
-        BukkitExecutor.ensureAsync(() -> doShowTeamStatus(superiorPlayer, locale, island, members));
-    }
+            List<SuperiorPlayer> members = island.getIslandMembers(true);
 
-    private static void doShowTeamStatus(@Nullable SuperiorPlayer superiorPlayer, Locale locale, Island island, List<SuperiorPlayer> members) {
-        Message.ISLAND_TEAM_STATUS_HEADER.sendPlayerOrConsole(superiorPlayer,
-                island.getOwner().getName(),
-                members.size(),
-                island.getTeamLimit()
-        );
+            if (!Message.ISLAND_TEAM_STATUS_ROLES.isEmpty(locale)) {
+                Map<PlayerRole, StringBuilder> rolesStrings = new ArrayMap<>();
+                plugin.getRoles().getRoles().stream().filter(PlayerRole::isRoleLadder)
+                        .forEach(playerRole -> rolesStrings.put(playerRole, new StringBuilder()));
+                rolesStrings.put(SPlayerRole.lastRole(), new StringBuilder());
 
-        if (!Message.ISLAND_TEAM_STATUS_ROLES.isEmpty(locale)) {
-            String onlineStatus = Message.ISLAND_TEAM_STATUS_ONLINE.getMessage(locale);
-            String offlineStatus = Message.ISLAND_TEAM_STATUS_OFFLINE.getMessage(locale);
+                String onlineStatus = Message.ISLAND_TEAM_STATUS_ONLINE.getMessage(locale),
+                        offlineStatus = Message.ISLAND_TEAM_STATUS_OFFLINE.getMessage(locale);
 
-            members.stream()
-                    .sorted(Collections.reverseOrder(SortingComparators.ISLAND_ROLES_COMPARATOR))
-                    .forEach(islandMember -> {
-                        PlayerRole playerRole = islandMember.getPlayerRole();
-                        long time = islandMember.getLastTimeStatus() == -1 ? -1 : ((System.currentTimeMillis() / 1000) - islandMember.getLastTimeStatus());
-                        boolean onlinePlayer = islandMember.isOnline() && islandMember.isShownAsOnline();
-                        Message.ISLAND_TEAM_STATUS_ROLES.sendPlayerOrConsole(superiorPlayer,
-                                playerRole,
-                                islandMember.getName(),
-                                onlinePlayer ? onlineStatus : offlineStatus,
-                                Formatters.TIME_FORMATTER.format(Duration.ofSeconds(time), locale)
-                        );
-                    });
-        }
+                members.forEach(islandMember -> {
+                    PlayerRole playerRole = islandMember.getPlayerRole();
+                    long time = islandMember.getLastTimeStatus() == -1 ? -1 : ((System.currentTimeMillis() / 1000) - islandMember.getLastTimeStatus());
+                    boolean onlinePlayer = islandMember.isOnline() && islandMember.isShownAsOnline();
+                    rolesStrings.get(playerRole).append(Message.ISLAND_TEAM_STATUS_ROLES.getMessage(locale, playerRole,
+                            islandMember.getName(), onlinePlayer ? onlineStatus : offlineStatus,
+                            Formatters.TIME_FORMATTER.format(Duration.ofSeconds(time), locale))).append("\n");
+                });
 
-        Message.ISLAND_TEAM_STATUS_FOOTER.sendPlayerOrConsole(superiorPlayer);
+                rolesStrings.keySet().stream()
+                        .sorted(Collections.reverseOrder(Comparator.comparingInt(PlayerRole::getWeight)))
+                        .forEach(playerRole -> infoMessage.append(rolesStrings.get(playerRole)));
+            }
+
+            if (!Message.ISLAND_TEAM_STATUS_FOOTER.isEmpty(locale))
+                infoMessage.append(Message.ISLAND_TEAM_STATUS_FOOTER.getMessage(locale));
+
+            Message.CUSTOM.send(sender, infoMessage.toString(), false);
+        });
     }
 
     @Override

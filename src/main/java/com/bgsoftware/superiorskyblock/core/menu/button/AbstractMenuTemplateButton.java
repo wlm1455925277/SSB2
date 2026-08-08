@@ -4,10 +4,8 @@ import com.bgsoftware.common.annotations.Nullable;
 import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.menu.button.MenuTemplateButton;
 import com.bgsoftware.superiorskyblock.api.menu.button.MenuViewButton;
-import com.bgsoftware.superiorskyblock.api.menu.dialog.DialogButton;
 import com.bgsoftware.superiorskyblock.api.menu.view.MenuView;
 import com.bgsoftware.superiorskyblock.api.world.GameSound;
-import com.bgsoftware.superiorskyblock.core.Either;
 import com.bgsoftware.superiorskyblock.core.Text;
 import com.bgsoftware.superiorskyblock.core.itemstack.ItemBuilder;
 import com.bgsoftware.superiorskyblock.core.menu.TemplateItem;
@@ -20,42 +18,33 @@ public abstract class AbstractMenuTemplateButton<V extends MenuView<V, ?>> imple
 
     protected static final SuperiorSkyblockPlugin plugin = SuperiorSkyblockPlugin.getPlugin();
 
-    private final Either<TemplateItem, DialogButton> buttonData;
+    private final TemplateItem buttonItem;
     private final GameSound clickSound;
     private final List<String> commands;
     private final String requiredPermission;
     private final GameSound lackPermissionSound;
     private final Class<?> viewButtonType;
 
-    public AbstractMenuTemplateButton(AbstractBuilder<V> builder, Class<?> viewButtonType) {
-        this.buttonData = builder.buttonData;
-        this.clickSound = builder.clickSound;
-        this.commands = builder.commands == null ? Collections.emptyList() : Collections.unmodifiableList(builder.commands);
-        this.requiredPermission = builder.requiredPermission;
-        this.lackPermissionSound = builder.lackPermissionSound;
+    public AbstractMenuTemplateButton(@Nullable TemplateItem buttonItem, @Nullable GameSound clickSound,
+                                      @Nullable List<String> commands, @Nullable String requiredPermission,
+                                      @Nullable GameSound lackPermissionSound, Class<?> viewButtonType) {
+        this.buttonItem = buttonItem;
+        this.clickSound = clickSound;
+        this.commands = commands == null ? Collections.emptyList() : Collections.unmodifiableList(commands);
+        this.requiredPermission = requiredPermission;
+        this.lackPermissionSound = lackPermissionSound;
         this.viewButtonType = viewButtonType;
     }
 
     @Nullable
     @Override
     public ItemStack getButtonItem() {
-        TemplateItem buttonItem = getButtonTemplateItem();
-        return buttonItem == null ? null : buttonItem.getBuilder().build();
-    }
-
-    @Nullable
-    @Override
-    public DialogButton getButtonDialog() {
-        return this.buttonData == null || this.buttonData.isLeft() ? null : this.buttonData.getRight();
+        return this.buttonItem == null ? null : this.buttonItem.getBuilder().build();
     }
 
     @Nullable
     public TemplateItem getButtonTemplateItem() {
-        return this.buttonData == null || this.buttonData.isRight() ? null : this.buttonData.getLeft();
-    }
-
-    public Either<TemplateItem, DialogButton> getButtonData() {
-        return buttonData;
+        return buttonItem;
     }
 
     @Nullable
@@ -94,8 +83,8 @@ public abstract class AbstractMenuTemplateButton<V extends MenuView<V, ?>> imple
     }
 
     public <B extends MenuTemplateButton.Builder<?>> B applyToBuilder(B buttonBuilder) {
-        if (((AbstractBuilder<?>) buttonBuilder).buttonData == null)
-            ((AbstractBuilder<?>) buttonBuilder).buttonData = this.buttonData;
+        if (((AbstractBuilder<?>) buttonBuilder).buttonItem == null)
+            ((AbstractBuilder<?>) buttonBuilder).buttonItem = this.buttonItem;
 
         if (this.clickSound != null)
             buttonBuilder.setClickSound(this.clickSound);
@@ -113,7 +102,8 @@ public abstract class AbstractMenuTemplateButton<V extends MenuView<V, ?>> imple
         return new AbstractBuilder<V>() {
             @Override
             public MenuTemplateButton<V> build() {
-                return new AbstractMenuTemplateButton<V>(this, viewButtonType) {
+                return new AbstractMenuTemplateButton<V>(this.buttonItem, this.clickSound, this.commands,
+                        this.requiredPermission, this.lackPermissionSound, viewButtonType) {
 
                     @Override
                     public MenuViewButton<V> createViewButton(V menuView) {
@@ -126,29 +116,18 @@ public abstract class AbstractMenuTemplateButton<V extends MenuView<V, ?>> imple
 
     public static abstract class AbstractBuilder<V extends MenuView<V, ?>> implements MenuTemplateButton.Builder<V> {
 
-        protected Either<TemplateItem, DialogButton> buttonData = null;
+        protected TemplateItem buttonItem = null;
         protected GameSound clickSound = null;
         protected List<String> commands = null;
         protected String requiredPermission = null;
         protected GameSound lackPermissionSound = null;
-
-        @Nullable
-        public Either<TemplateItem, DialogButton> getButtonData() {
-            return buttonData;
-        }
 
         public Builder<V> setButtonItem(ItemStack buttonItem) {
             return this.setButtonItem(new TemplateItem(new ItemBuilder(buttonItem)));
         }
 
         public Builder<V> setButtonItem(TemplateItem buttonItem) {
-            this.buttonData = Either.left(buttonItem);
-            return this;
-        }
-
-        @Override
-        public Builder<V> setButtonDialog(DialogButton buttonDialog) {
-            this.buttonData = Either.right(buttonDialog);
+            this.buttonItem = buttonItem;
             return this;
         }
 

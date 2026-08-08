@@ -5,7 +5,6 @@ import com.bgsoftware.superiorskyblock.SuperiorSkyblockPlugin;
 import com.bgsoftware.superiorskyblock.api.events.IslandSetHomeEvent;
 import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.bgsoftware.superiorskyblock.api.island.IslandChunkFlags;
-import com.bgsoftware.superiorskyblock.api.player.algorithm.PlayerTeleportAlgorithm;
 import com.bgsoftware.superiorskyblock.api.world.Dimension;
 import com.bgsoftware.superiorskyblock.api.world.WorldInfo;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
@@ -62,7 +61,7 @@ public class EntityTeleports {
         teleport(entity, location, null);
     }
 
-    public static void teleport(Entity entity, Location location, @Nullable Consumer<PlayerTeleportAlgorithm.TeleportResult> teleportResult) {
+    public static void teleport(Entity entity, Location location, @Nullable Consumer<Boolean> teleportResult) {
         Island island = plugin.getGrid().getIslandAt(location);
 
         if (island != null) {
@@ -74,8 +73,8 @@ public class EntityTeleports {
     }
 
     public static void teleportUntilSuccess(Entity entity, Location location, long cooldown, @Nullable Runnable onFinish) {
-        teleport(entity, location, result -> {
-            if (result != PlayerTeleportAlgorithm.TeleportResult.SUCCESS) {
+        teleport(entity, location, succeed -> {
+            if (!succeed) {
                 if (cooldown > 0) {
                     BukkitExecutor.sync(() -> teleportUntilSuccess(entity, location, cooldown, onFinish), cooldown);
                 } else {
@@ -241,15 +240,9 @@ public class EntityTeleports {
         });
     }
 
-    private static void teleportEntity(Entity entity, Location location, @Nullable Consumer<PlayerTeleportAlgorithm.TeleportResult> teleportResult) {
+    private static void teleportEntity(Entity entity, Location location, @Nullable Consumer<Boolean> teleportResult) {
         entity.eject();
-        if(teleportResult == null) {
-            plugin.getProviders().getAsyncProvider().teleport(entity, location, null);
-        } else {
-            plugin.getProviders().getAsyncProvider().teleport(entity, location, res -> {
-                teleportResult.accept(res ? PlayerTeleportAlgorithm.TeleportResult.SUCCESS : PlayerTeleportAlgorithm.TeleportResult.GENERAL_FAILURE);
-            });
-        }
+        plugin.getProviders().getAsyncProvider().teleport(entity, location, teleportResult);
     }
 
     private static Location adjustLocationToHome(Island island, Block block, float yaw, float pitch) {

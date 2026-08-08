@@ -8,6 +8,7 @@ import com.bgsoftware.superiorskyblock.core.itemstack.ItemBuilder;
 import com.bgsoftware.superiorskyblock.core.menu.button.AbstractPagedMenuButton;
 import com.bgsoftware.superiorskyblock.core.menu.button.PagedMenuTemplateButtonImpl;
 import com.bgsoftware.superiorskyblock.core.menu.impl.MenuIslandRatings;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
 
 public class RatingsPagedObjectButton extends AbstractPagedMenuButton<MenuIslandRatings.View, MenuIslandRatings.RatingInfo> {
@@ -17,10 +18,15 @@ public class RatingsPagedObjectButton extends AbstractPagedMenuButton<MenuIsland
     }
 
     @Override
-    public ItemStack modifyViewItem(ItemBuilder itemBuilder) {
+    public void onButtonClick(InventoryClickEvent clickEvent) {
+        // Dummy button
+    }
+
+    @Override
+    public ItemStack modifyViewItem(ItemStack buttonItem) {
         SuperiorPlayer ratingPlayer = plugin.getPlayers().getSuperiorPlayer(pagedObject.getPlayerUUID());
 
-        return itemBuilder
+        return new ItemBuilder(buttonItem)
                 .replaceAll("{0}", ratingPlayer.getName())
                 .replaceAll("{1}", Formatters.RATING_FORMATTER.format(pagedObject.getRating().getValue(), ratingPlayer.getUserLocale()))
                 .asSkullOf(ratingPlayer)
@@ -31,7 +37,8 @@ public class RatingsPagedObjectButton extends AbstractPagedMenuButton<MenuIsland
 
         @Override
         public PagedMenuTemplateButton<MenuIslandRatings.View, MenuIslandRatings.RatingInfo> build() {
-            return new PagedMenuTemplateButtonImpl<>(this, RatingsPagedObjectButton.class,
+            return new PagedMenuTemplateButtonImpl<>(buttonItem, clickSound, commands, requiredPermission,
+                    lackPermissionSound, nullItem, getButtonIndex(), RatingsPagedObjectButton.class,
                     RatingsPagedObjectButton::new);
         }
 

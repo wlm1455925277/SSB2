@@ -3,17 +3,19 @@ package com.bgsoftware.superiorskyblock.core.menu.button.impl;
 import com.bgsoftware.common.annotations.Nullable;
 import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.bgsoftware.superiorskyblock.api.island.bank.BankTransaction;
-import com.bgsoftware.superiorskyblock.api.menu.button.click.ButtonClickContext;
 import com.bgsoftware.superiorskyblock.api.menu.button.MenuTemplateButton;
 import com.bgsoftware.superiorskyblock.api.world.GameSound;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
 import com.bgsoftware.superiorskyblock.core.menu.MenuActions;
+import com.bgsoftware.superiorskyblock.core.menu.TemplateItem;
 import com.bgsoftware.superiorskyblock.core.menu.button.AbstractMenuTemplateButton;
 import com.bgsoftware.superiorskyblock.core.menu.button.AbstractMenuViewButton;
 import com.bgsoftware.superiorskyblock.core.menu.button.MenuTemplateButtonImpl;
 import com.bgsoftware.superiorskyblock.core.menu.view.impl.IslandMenuView;
+import org.bukkit.event.inventory.InventoryClickEvent;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public class BankDepositButton extends AbstractMenuViewButton<IslandMenuView> {
 
@@ -27,8 +29,8 @@ public class BankDepositButton extends AbstractMenuViewButton<IslandMenuView> {
     }
 
     @Override
-    public void onButtonClick(ButtonClickContext<IslandMenuView> context) {
-        SuperiorPlayer clickedPlayer = plugin.getPlayers().getSuperiorPlayer(context.getPlayer());
+    public void onButtonClick(InventoryClickEvent clickEvent) {
+        SuperiorPlayer clickedPlayer = plugin.getPlayers().getSuperiorPlayer(clickEvent.getWhoClicked());
 
         Island island = menuView.getIsland();
 
@@ -62,8 +64,8 @@ public class BankDepositButton extends AbstractMenuViewButton<IslandMenuView> {
 
         @Override
         public MenuTemplateButton<IslandMenuView> build() {
-            this.clickSound = null;
-            return new Template(this, successSound, failSound, depositPercentage);
+            return new Template(buttonItem, commands, requiredPermission, lackPermissionSound,
+                    successSound, failSound, depositPercentage);
         }
 
     }
@@ -76,9 +78,11 @@ public class BankDepositButton extends AbstractMenuViewButton<IslandMenuView> {
         private final GameSound failSound;
         private final BigDecimal depositPercentage;
 
-        Template(AbstractBuilder<IslandMenuView> builder, @Nullable GameSound successSound,
+        Template(@Nullable TemplateItem buttonItem, @Nullable List<String> commands, @Nullable String requiredPermission,
+                 @Nullable GameSound lackPermissionSound, @Nullable GameSound successSound,
                  @Nullable GameSound failSound, double depositPercentage) {
-            super(builder, BankDepositButton.class, BankDepositButton::new);
+            super(buttonItem, null, commands, requiredPermission, lackPermissionSound,
+                    BankDepositButton.class, BankDepositButton::new);
             this.successSound = successSound;
             this.failSound = failSound;
             this.depositPercentage = BigDecimal.valueOf(depositPercentage / 100D);

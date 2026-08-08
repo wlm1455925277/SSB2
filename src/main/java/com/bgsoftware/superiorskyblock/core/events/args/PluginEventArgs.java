@@ -22,7 +22,6 @@ import com.bgsoftware.superiorskyblock.api.key.Key;
 import com.bgsoftware.superiorskyblock.api.menu.view.MenuView;
 import com.bgsoftware.superiorskyblock.api.missions.IMissionsHolder;
 import com.bgsoftware.superiorskyblock.api.missions.Mission;
-import com.bgsoftware.superiorskyblock.api.player.chat.ChatState;
 import com.bgsoftware.superiorskyblock.api.player.container.PlayersContainer;
 import com.bgsoftware.superiorskyblock.api.schematic.Schematic;
 import com.bgsoftware.superiorskyblock.api.service.message.IMessageComponent;
@@ -93,7 +92,6 @@ public class PluginEventArgs {
 
     public static class IslandBiomeChange extends IslandDoActionArgs {
 
-        public Dimension dimension;
         public Biome biome;
 
     }
@@ -202,12 +200,6 @@ public class PluginEventArgs {
 
     }
 
-    public static class IslandChangeRolePrivilege extends IslandDoActionArgs {
-
-        public PlayerRole playerRole;
-
-    }
-
     public static class IslandChangeSpawnerRates extends IslandDoActionArgs {
 
         public double spawnerRates;
@@ -252,9 +244,14 @@ public class PluginEventArgs {
 
     }
 
+    public static class IslandChangeRolePrivilege extends IslandDoActionArgs {
+
+        public PlayerRole playerRole;
+
+    }
+
     public static class IslandChat extends IslandDoActionArgs {
 
-        public ChatState chatState;
         public String message;
 
     }
@@ -550,7 +547,7 @@ public class PluginEventArgs {
         public UpgradeLevel nextLevel;
         public List<String> commands;
         public IslandUpgradeEvent.Cause upgradeCause;
-        public List<UpgradeCost> upgradeCosts;
+        public UpgradeCost upgradeCost;
 
     }
 
@@ -601,12 +598,6 @@ public class PluginEventArgs {
     public static class PlayerChangeBorderColor extends PlayerDoActionArgs {
 
         public BorderColor borderColor;
-
-    }
-
-    public static class PlayerChangeChatState extends PlayerDoActionArgs {
-
-        public ChatState newChatState;
 
     }
 

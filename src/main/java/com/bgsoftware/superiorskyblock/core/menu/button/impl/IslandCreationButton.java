@@ -3,13 +3,10 @@ package com.bgsoftware.superiorskyblock.core.menu.button.impl;
 import com.bgsoftware.common.annotations.Nullable;
 import com.bgsoftware.superiorskyblock.api.menu.MenuIslandCreationConfig;
 import com.bgsoftware.superiorskyblock.api.menu.button.MenuTemplateButton;
-import com.bgsoftware.superiorskyblock.api.menu.button.click.ButtonClickContext;
-import com.bgsoftware.superiorskyblock.api.menu.dialog.DialogButton;
 import com.bgsoftware.superiorskyblock.api.schematic.Schematic;
 import com.bgsoftware.superiorskyblock.api.world.GameSound;
 import com.bgsoftware.superiorskyblock.api.wrappers.BlockOffset;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
-import com.bgsoftware.superiorskyblock.core.Either;
 import com.bgsoftware.superiorskyblock.core.menu.MenuActions;
 import com.bgsoftware.superiorskyblock.core.menu.MenuConfig;
 import com.bgsoftware.superiorskyblock.core.menu.TemplateItem;
@@ -19,6 +16,7 @@ import com.bgsoftware.superiorskyblock.core.menu.button.MenuTemplateButtonImpl;
 import com.bgsoftware.superiorskyblock.core.menu.impl.MenuIslandCreation;
 import org.bukkit.Bukkit;
 import org.bukkit.block.Biome;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
 
 import java.math.BigDecimal;
@@ -42,28 +40,27 @@ public class IslandCreationButton extends AbstractMenuViewButton<MenuIslandCreat
         SuperiorPlayer inventoryViewer = menuView.getInventoryViewer();
         String requiredPermission = getTemplate().getRequiredPermission();
         return (requiredPermission == null || inventoryViewer.hasPermission(requiredPermission) ?
-                getTemplate().getAccessItem() : getTemplate().lackPermissionItem.getLeft()).build(inventoryViewer);
+                getTemplate().getAccessItem() : getTemplate().lackPermissionItem).build(inventoryViewer);
     }
 
     @Override
-    public void onButtonClick(ButtonClickContext<MenuIslandCreation.View> context) {
-        SuperiorPlayer clickedPlayer = plugin.getPlayers().getSuperiorPlayer(context.getPlayer());
+    public void onButtonClick(InventoryClickEvent clickEvent) {
+        SuperiorPlayer clickedPlayer = plugin.getPlayers().getSuperiorPlayer(clickEvent.getWhoClicked());
         MenuActions.simulateIslandCreationClick(clickedPlayer, menuView.getIslandName(),
-                getTemplate().getCreationConfig(),
-                context.getClickType().isRightClick(), menuView);
+                getTemplate().getCreationConfig(), clickEvent.getClick().isRightClick(), menuView);
     }
 
     @Override
-    public void onButtonClickLackPermission(ButtonClickContext<MenuIslandCreation.View> context) {
-        super.onButtonClickLackPermission(context);
+    public void onButtonClickLackPermission(InventoryClickEvent clickEvent) {
+        super.onButtonClickLackPermission(clickEvent);
         getTemplate().lackPermissionCommands.forEach(command -> Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
-                command.replace("%player%", context.getPlayer().getName())));
+                command.replace("%player%", clickEvent.getWhoClicked().getName())));
     }
 
     public static class Builder extends AbstractMenuTemplateButton.AbstractBuilder<MenuIslandCreation.View> {
 
         private final Schematic schematic;
-        private Either<TemplateItem, DialogButton> noAccessItem = null;
+        private TemplateItem noAccessItem = null;
         private List<String> noAccessCommands = null;
         @Nullable
         private Biome biome;
@@ -77,19 +74,11 @@ public class IslandCreationButton extends AbstractMenuViewButton<MenuIslandCreat
         }
 
         public void setAccessItem(TemplateItem accessItem) {
-            this.buttonData = Either.left(accessItem);
-        }
-
-        public void setAccessDialog(DialogButton accessDialog) {
-            this.buttonData = Either.right(accessDialog);
+            this.buttonItem = accessItem;
         }
 
         public void setNoAccessItem(TemplateItem noAccessItem) {
-            this.noAccessItem = Either.left(noAccessItem);
-        }
-
-        public void setNoAccessDialog(DialogButton noAccessDialog) {
-            this.noAccessItem = Either.right(noAccessDialog);
+            this.noAccessItem = noAccessItem;
         }
 
         public void setAccessSound(GameSound accessSound) {
@@ -130,18 +119,8 @@ public class IslandCreationButton extends AbstractMenuViewButton<MenuIslandCreat
 
         @Override
         public MenuTemplateButton<MenuIslandCreation.View> build() {
-            GameSound accessSound = clickSound;
-            List<String> accessCommands = commands;
-            this.buttonData = this.buttonData == null ? Either.left(TemplateItem.AIR) : this.buttonData;
-            this.clickSound = null;
-            this.commands = null;
-            try {
-                return new Template(this, accessSound, accessCommands, noAccessItem, noAccessCommands, biome,
-                        bonusWorth, bonusLevel, isOffset, spawnOffset, schematic);
-            } finally {
-                this.clickSound = accessSound;
-                this.commands = accessCommands;
-            }
+            return new Template(requiredPermission, lackPermissionSound, clickSound, commands, noAccessItem,
+                    noAccessCommands, biome, bonusWorth, bonusLevel, isOffset, buttonItem, spawnOffset, schematic);
         }
 
     }
@@ -151,7 +130,7 @@ public class IslandCreationButton extends AbstractMenuViewButton<MenuIslandCreat
         @Nullable
         private final GameSound accessSound;
         private final List<String> accessCommands;
-        private final Either<TemplateItem, DialogButton> lackPermissionItem;
+        private final TemplateItem lackPermissionItem;
         private final List<String> lackPermissionCommands;
         @Nullable
         private final Biome biome;
@@ -164,15 +143,16 @@ public class IslandCreationButton extends AbstractMenuViewButton<MenuIslandCreat
 
         private final MenuIslandCreationConfig creationConfig;
 
-        Template(AbstractBuilder<MenuIslandCreation.View> builder,
+        Template(@Nullable String requiredPermission, @Nullable GameSound lackPermissionSound,
                  @Nullable GameSound accessSound, @Nullable List<String> accessCommands,
-                 @Nullable Either<TemplateItem, DialogButton> lackPermissionItem, @Nullable List<String> lackPermissionCommands,
+                 @Nullable TemplateItem lackPermissionItem, @Nullable List<String> lackPermissionCommands,
                  @Nullable Biome biome, @Nullable BigDecimal bonusWorth, @Nullable BigDecimal bonusLevel, boolean isOffset,
-                 @Nullable BlockOffset spawnOffset, Schematic schematic) {
-            super(builder, IslandCreationButton.class, IslandCreationButton::new);
+                 @Nullable TemplateItem accessItem, @Nullable BlockOffset spawnOffset, Schematic schematic) {
+            super(accessItem == null ? TemplateItem.AIR : accessItem, null, null, requiredPermission,
+                    lackPermissionSound, IslandCreationButton.class, IslandCreationButton::new);
             this.accessSound = accessSound;
             this.accessCommands = accessCommands == null ? Collections.emptyList() : accessCommands;
-            this.lackPermissionItem = lackPermissionItem == null ? Either.left(TemplateItem.AIR) : lackPermissionItem;
+            this.lackPermissionItem = lackPermissionItem == null ? TemplateItem.AIR : lackPermissionItem;
             this.lackPermissionCommands = lackPermissionCommands == null ? Collections.emptyList() : lackPermissionCommands;
             this.biome = biome;
             this.bonusWorth = bonusWorth == null ? BigDecimal.ZERO : bonusWorth;

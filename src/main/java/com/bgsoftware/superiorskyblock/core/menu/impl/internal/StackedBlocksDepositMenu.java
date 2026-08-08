@@ -6,6 +6,7 @@ import com.bgsoftware.superiorskyblock.api.service.stackedblocks.StackedBlocksIn
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
 import com.bgsoftware.superiorskyblock.core.LazyReference;
 import com.bgsoftware.superiorskyblock.world.BukkitItems;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -29,8 +30,7 @@ public class StackedBlocksDepositMenu implements InventoryHolder {
     private final Location stackedBlock;
 
     public StackedBlocksDepositMenu(Location stackedBlock) {
-        this.inventory = plugin.getProviders().getUIProvider().createInventory(
-                this, 36, plugin.getSettings().getStackedBlocks().getDepositMenu().getTitle());
+        this.inventory = Bukkit.createInventory(this, 36, plugin.getSettings().getStackedBlocks().getDepositMenu().getTitle());
         this.stackedBlock = stackedBlock;
     }
 

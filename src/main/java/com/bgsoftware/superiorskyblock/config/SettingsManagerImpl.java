@@ -46,7 +46,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 @SuppressWarnings("WeakerAccess")
 public class SettingsManagerImpl extends Manager implements SettingsManager {
@@ -54,7 +53,7 @@ public class SettingsManagerImpl extends Manager implements SettingsManager {
     private static final String[] IGNORED_SECTIONS = new String[]{
             "config.yml", "ladder", "commands-cooldown", "containers", "event-commands", "command-aliases", "worlds.dimensions",
             "island-previews.locations", "default-values.block-limits", "default-values.entity-limits",
-            "default-values.role-limits", "stacked-blocks.limits", "default-values.generator", "message-delays", "default-placeholders"
+            "default-values.role-limits", "stacked-blocks.limits", "default-values.generator", "message-delays"
     };
 
     private final GlobalSection global = new GlobalSection();
@@ -84,15 +83,7 @@ public class SettingsManagerImpl extends Manager implements SettingsManager {
             plugin.saveResource("config.yml", false);
 
         CommentedConfiguration cfg = CommentedConfiguration.loadConfiguration(file);
-
-        if (convertData(cfg)) {
-            try {
-                cfg.save(file);
-            } catch (Exception error) {
-                Log.error(error, file, "An unexpected error occurred while loading config file:");
-            }
-        }
-
+        convertData(cfg);
         convertInteractables(plugin, cfg);
         convertEntityCategories(plugin, cfg);
 
@@ -294,6 +285,16 @@ public class SettingsManagerImpl extends Manager implements SettingsManager {
     @Override
     public boolean isTransferConfirm() {
         return this.global.isTransferConfirm();
+    }
+
+    @Override
+    public String getSpawnersProvider() {
+        return this.global.getSpawnersProvider();
+    }
+
+    @Override
+    public String getStackedBlocksProvider() {
+        return this.global.getStackedBlocksProvider();
     }
 
     @Override
@@ -529,21 +530,6 @@ public class SettingsManagerImpl extends Manager implements SettingsManager {
     }
 
     @Override
-    public String getSpawnersProvider() {
-        return this.global.getSpawnersProvider();
-    }
-
-    @Override
-    public String getStackedBlocksProvider() {
-        return this.global.getStackedBlocksProvider();
-    }
-
-    @Override
-    public String getPricesProvider() {
-        return this.global.getPricesProvider();
-    }
-
-    @Override
     public BlockValuesManager.SyncWorthStatus getSyncWorth() {
         return this.global.getSyncWorth();
     }
@@ -768,9 +754,7 @@ public class SettingsManagerImpl extends Manager implements SettingsManager {
         this.islandPreviews.setContainer(container);
     }
 
-    private boolean convertData(YamlConfiguration cfg) {
-        AtomicBoolean converted = new AtomicBoolean(false);
-
+    private void convertData(YamlConfiguration cfg) {
         if (cfg.getConfigurationSection("worlds.dimensions") == null) {
             cfg.set("worlds.dimensions.normal", cfg.getConfigurationSection("worlds.normal"));
             cfg.set("worlds.dimensions.normal.environment", "NORMAL");
@@ -905,63 +889,8 @@ public class SettingsManagerImpl extends Manager implements SettingsManager {
         if (cfg.isBoolean("worlds.end.dragon-fight")) {
             cfg.set("worlds.end.dragon-fight.enabled", cfg.getBoolean("worlds.end.dragon-fight"));
         }
-        if (cfg.get("default-values.island-effects") == null) {
+        if (!cfg.isConfigurationSection("default-values.island-effects"))
             cfg.createSection("default-values.island-effects");
-        }
-        convertListToSection(cfg, "default-values.block-limits", true, converted);
-        convertListToSection(cfg, "default-values.entity-limits", true, converted);
-        convertListToSection(cfg, "default-values.island-effects", true, converted);
-        convertListToSection(cfg, "default-values.role-limits", true, converted);
-        convertListToSection(cfg, "stacked-blocks.limits", true, converted);
-        convertListToSection(cfg, "default-placeholders", false, converted);
-        if (cfg.isConfigurationSection("worlds.dimensions")) {
-            boolean hasDimensionalGeneratorRates = false;
-
-            for (String dimension : cfg.getConfigurationSection("worlds.dimensions").getKeys(false)) {
-                if (cfg.contains("default-values.generator." + dimension)) {
-                    convertListToSection(cfg, "default-values.generator." + dimension, true, converted);
-                    hasDimensionalGeneratorRates = true;
-                }
-            }
-
-            if (!hasDimensionalGeneratorRates) {
-                Object generator = cfg.get("default-values.generator");
-                String defaultDimension = cfg.getString("worlds.default-world");
-                cfg.set("default-values.generator." + defaultDimension, generator);
-                convertListToSection(cfg, "default-values.generator." + defaultDimension, true, converted);
-            }
-        }
-
-        return converted.get();
-    }
-
-    private void convertListToSection(YamlConfiguration cfg, String path, boolean integers, AtomicBoolean converted) {
-        if (cfg.isList(path)) {
-            List<String> list = cfg.getStringList(path);
-
-            cfg.set(path, null);
-
-            for (String line : list) {
-                String[] sections = line.split(":");
-
-                String key;
-                String value;
-                if (sections.length == 2) {
-                    key = sections[0];
-                    value = sections[1];
-                } else if (sections.length == 3) {
-                    key = sections[0] + ":" + sections[1];
-                    value = sections[2];
-                } else {
-                    Log.warnFromFile("config.yml", "Cannot parse value '", line, "', skipping...");
-                    continue;
-                }
-
-                cfg.set(path + "." + key, integers ? Integer.parseInt(value) : value);
-            }
-
-            converted.set(true);
-        }
     }
 
     private void convertInteractables(SuperiorSkyblockPlugin plugin, YamlConfiguration cfg) {

@@ -6,6 +6,7 @@ import com.bgsoftware.superiorskyblock.core.menu.button.AbstractMenuTemplateButt
 import com.bgsoftware.superiorskyblock.core.menu.button.AbstractMenuViewButton;
 import com.bgsoftware.superiorskyblock.core.menu.button.MenuTemplateButtonImpl;
 import com.bgsoftware.superiorskyblock.core.menu.view.AbstractIconProviderMenu;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
 
 public class IconDisplayButton<E> extends AbstractMenuViewButton<AbstractIconProviderMenu.View<E>> {
@@ -21,13 +22,17 @@ public class IconDisplayButton<E> extends AbstractMenuViewButton<AbstractIconPro
         return iconTemplate == null ? null : iconTemplate.build();
     }
 
+    @Override
+    public void onButtonClick(InventoryClickEvent clickEvent) {
+        // Dummy button
+    }
 
     public static class Builder<E> extends AbstractMenuTemplateButton.AbstractBuilder<AbstractIconProviderMenu.View<E>> {
 
         @Override
         public MenuTemplateButton<AbstractIconProviderMenu.View<E>> build() {
-            return new MenuTemplateButtonImpl<>(this, IconDisplayButton.class,
-                    IconDisplayButton::new);
+            return new MenuTemplateButtonImpl<>(buttonItem, clickSound, commands, requiredPermission,
+                    lackPermissionSound, IconDisplayButton.class, IconDisplayButton::new);
         }
 
     }

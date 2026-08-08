@@ -3,15 +3,16 @@ package com.bgsoftware.superiorskyblock.core.menu.button.impl;
 import com.bgsoftware.common.annotations.Nullable;
 import com.bgsoftware.superiorskyblock.api.island.Island;
 import com.bgsoftware.superiorskyblock.api.island.bank.BankTransaction;
-import com.bgsoftware.superiorskyblock.api.menu.button.click.ButtonClickContext;
 import com.bgsoftware.superiorskyblock.api.menu.button.MenuTemplateButton;
 import com.bgsoftware.superiorskyblock.api.world.GameSound;
 import com.bgsoftware.superiorskyblock.api.wrappers.SuperiorPlayer;
 import com.bgsoftware.superiorskyblock.core.menu.MenuActions;
+import com.bgsoftware.superiorskyblock.core.menu.TemplateItem;
 import com.bgsoftware.superiorskyblock.core.menu.button.AbstractMenuTemplateButton;
 import com.bgsoftware.superiorskyblock.core.menu.button.AbstractMenuViewButton;
 import com.bgsoftware.superiorskyblock.core.menu.button.MenuTemplateButtonImpl;
 import com.bgsoftware.superiorskyblock.core.menu.view.impl.IslandMenuView;
+import org.bukkit.event.inventory.InventoryClickEvent;
 
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -29,8 +30,8 @@ public class BankWithdrawButton extends AbstractMenuViewButton<IslandMenuView> {
     }
 
     @Override
-    public void onButtonClick(ButtonClickContext<IslandMenuView> context) {
-        SuperiorPlayer clickedPlayer = plugin.getPlayers().getSuperiorPlayer(context.getPlayer());
+    public void onButtonClick(InventoryClickEvent clickEvent) {
+        SuperiorPlayer clickedPlayer = plugin.getPlayers().getSuperiorPlayer(clickEvent.getWhoClicked());
         Island island = menuView.getIsland();
 
         BigDecimal amount = island.getIslandBank().getBalance()
@@ -70,8 +71,8 @@ public class BankWithdrawButton extends AbstractMenuViewButton<IslandMenuView> {
 
         @Override
         public MenuTemplateButton<IslandMenuView> build() {
-            this.clickSound = null;
-            return new Template(this, successSound, failSound, withdrawValue, withdrawCommands);
+            return new Template(buttonItem, commands, requiredPermission, lackPermissionSound,
+                    successSound, failSound, withdrawValue, withdrawCommands);
         }
 
     }
@@ -85,9 +86,11 @@ public class BankWithdrawButton extends AbstractMenuViewButton<IslandMenuView> {
         private final BigDecimal withdrawValue;
         private final List<String> withdrawCommands;
 
-        Template(AbstractBuilder<IslandMenuView> builder, @Nullable GameSound successSound,
+        Template(@Nullable TemplateItem buttonItem, @Nullable List<String> commands, @Nullable String requiredPermission,
+                 @Nullable GameSound lackPermissionSound, @Nullable GameSound successSound,
                  @Nullable GameSound failSound, double withdrawValue, @Nullable List<String> withdrawCommands) {
-            super(builder, BankWithdrawButton.class, BankWithdrawButton::new);
+            super(buttonItem, null, commands, requiredPermission, lackPermissionSound,
+                    BankWithdrawButton.class, BankWithdrawButton::new);
             this.successSound = successSound;
             this.failSound = failSound;
             this.withdrawValue = BigDecimal.valueOf(withdrawValue / 100D);
