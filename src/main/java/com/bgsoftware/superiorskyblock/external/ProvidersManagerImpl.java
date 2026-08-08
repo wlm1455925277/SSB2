@@ -38,9 +38,13 @@ import com.bgsoftware.superiorskyblock.core.threads.BukkitExecutor;
 import com.bgsoftware.superiorskyblock.external.async.AsyncProvider;
 import com.bgsoftware.superiorskyblock.external.async.AsyncProvider_Default;
 import com.bgsoftware.superiorskyblock.external.blocks.ICustomBlocksProvider;
+import com.bgsoftware.superiorskyblock.external.bossbar.BossBarProvider;
+import com.bgsoftware.superiorskyblock.external.bossbar.BossBarProvider_Default;
 import com.bgsoftware.superiorskyblock.external.chunks.ChunksProvider_Default;
 import com.bgsoftware.superiorskyblock.external.economy.EconomyProvider_Default;
 import com.bgsoftware.superiorskyblock.external.menus.MenusProvider_Default;
+import com.bgsoftware.superiorskyblock.external.ui.UIProvider;
+import com.bgsoftware.superiorskyblock.external.ui.UIProvider_Default;
 import com.bgsoftware.superiorskyblock.external.permissions.PermissionsProvider_Default;
 import com.bgsoftware.superiorskyblock.external.placeholders.PlaceholdersProvider;
 import com.bgsoftware.superiorskyblock.external.prices.PricesProvider_Default;
@@ -83,6 +87,8 @@ public class ProvidersManagerImpl extends Manager implements ProvidersManager {
     private StackedBlocksProvider stackedBlocksProvider = new StackedBlocksProvider_Default();
     private EconomyProvider economyProvider = new EconomyProvider_Default();
     private EconomyProvider bankEconomyProvider = new EconomyProvider_Default();
+    private UIProvider uiProvider;
+    private BossBarProvider bossBarsProvider = new BossBarProvider_Default();
     private PermissionsProvider permissionsProvider = new PermissionsProvider_Default();
     private PricesProvider pricesProvider = new PricesProvider_Default();
     private VanishProvider vanishProvider = new VanishProvider_Default();
@@ -110,6 +116,7 @@ public class ProvidersManagerImpl extends Manager implements ProvidersManager {
 
     public ProvidersManagerImpl(SuperiorSkyblockPlugin plugin) {
         super(plugin);
+        this.uiProvider = new UIProvider_Default(plugin);
         setWorldsProviderInternal(new WorldsProvider_Default(plugin));
         this.menusProvider = new MenusProvider_Default(plugin);
     }
@@ -131,7 +138,8 @@ public class ProvidersManagerImpl extends Manager implements ProvidersManager {
             registerChunksProvider();
         });
 
-        registerMessageProviders();
+        registerUIProvider();
+        registerBossBarProvider();
 
         // We try to forcefully load prices after a second the server has enabled.
         BukkitExecutor.sync(this::forcePricesLoad, 60L);
@@ -310,6 +318,22 @@ public class ProvidersManagerImpl extends Manager implements ProvidersManager {
     @Override
     public void unregisterStackedBlocksListener(IStackedBlocksListener stackedBlocksListener) {
         this.stackedBlocksListeners.remove(stackedBlocksListener);
+    }
+
+    public UIProvider getUIProvider() {
+        return uiProvider;
+    }
+
+    public void setUIProvider(UIProvider uiProvider) {
+        this.uiProvider = uiProvider;
+    }
+
+    public BossBarProvider getBossBarProvider() {
+        return bossBarsProvider;
+    }
+
+    public void setBossBarProvider(BossBarProvider bossBarsProvider) {
+        this.bossBarsProvider = bossBarsProvider;
     }
 
     public void registerCustomBlocksProvider(ICustomBlocksProvider customBlocksProvider) {
@@ -511,12 +535,6 @@ public class ProvidersManagerImpl extends Manager implements ProvidersManager {
 
     }
 
-    private void registerMessageProviders() {
-        if (isHookEnabled("MiniMessage") && hasMiniMessageSupport()) {
-            registerHook("MiniMessageHook");
-        }
-    }
-
     private void registerSpawnersProvider() {
         if (!(spawnersProvider instanceof SpawnersProvider_AutoDetect))
             return;
@@ -615,6 +633,26 @@ public class ProvidersManagerImpl extends Manager implements ProvidersManager {
         }
     }
 
+    private void registerUIProvider() {
+        Optional<UIProvider> uiProvider = Optional.empty();
+
+        if (isHookEnabled("MiniMessage") && hasMiniMessageSupport()) {
+            uiProvider = createInstance("ui.UIProvider_MiniMessage");
+        }
+
+        uiProvider.ifPresent(this::setUIProvider);
+    }
+
+    private void registerBossBarProvider() {
+        Optional<BossBarProvider> bossBarProvider = Optional.empty();
+
+        if (isHookEnabled("MiniMessage") && hasMiniMessageSupport()) {
+            bossBarProvider = createInstance("bossbar.BossBarProvider_MiniMessage");
+        }
+
+        bossBarProvider.ifPresent(this::setBossBarProvider);
+    }
+
     private void registerPermissionsProvider() {
         Optional<PermissionsProvider> permissionsProvider = Optional.empty();
 
@@ -626,8 +664,13 @@ public class ProvidersManagerImpl extends Manager implements ProvidersManager {
     }
 
     private void registerPricesProvider() {
-        ShopsProvider.SHOPGUIPLUS.createInstance(plugin)
-                .map(shopsBridge -> new PricesProvider_ShopsBridgeWrapper(plugin, ShopsProvider.SHOPGUIPLUS, shopsBridge))
+        String pricesProviderName = plugin.getSettings().getPricesProvider();
+
+        Optional<ShopsProvider> shopsProvider = (pricesProviderName.equalsIgnoreCase("AUTO") ?
+                ShopsProvider.findAvailableProvider() : ShopsProvider.getShopsProvider(pricesProviderName));
+
+        shopsProvider.flatMap(provider -> provider.createInstance(plugin)
+                .map(shopsBridge -> new PricesProvider_ShopsBridgeWrapper(plugin, provider, shopsBridge)))
                 .ifPresent(this::setPricesProvider);
     }
 

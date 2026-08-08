@@ -10,7 +10,6 @@ import com.bgsoftware.superiorskyblock.core.menu.button.AbstractMenuViewButton;
 import com.bgsoftware.superiorskyblock.core.menu.button.MenuTemplateButtonImpl;
 import com.bgsoftware.superiorskyblock.core.menu.view.impl.IslandMenuView;
 import com.bgsoftware.superiorskyblock.island.bank.BankInterestStatus;
-import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.Date;
@@ -25,9 +24,9 @@ public class BankBalanceButton extends AbstractMenuViewButton<IslandMenuView> {
     public ItemStack createViewItem() {
         Island island = menuView.getInventoryViewer().getIsland();
         SuperiorPlayer inventoryViewer = menuView.getInventoryViewer();
-        ItemStack buttonItem = super.createViewItem();
+        ItemBuilder itemBuilder = super.getButtonTemplateItem().getBuilder();
 
-        return new ItemBuilder(buttonItem)
+        return itemBuilder
                 .replaceAll("{0}", island.getIslandBank().getBalance() + "")
                 .replaceAll("{1}", Formatters.NUMBER_FORMATTER.format(island.getIslandBank().getBalance()))
                 .replaceAll("{2}", Formatters.FANCY_NUMBER_FORMATTER.format(island.getIslandBank().getBalance(), inventoryViewer.getUserLocale()))
@@ -40,17 +39,12 @@ public class BankBalanceButton extends AbstractMenuViewButton<IslandMenuView> {
                 .build();
     }
 
-    @Override
-    public void onButtonClick(InventoryClickEvent clickEvent) {
-        // Dummy button
-    }
-
     public static class Builder extends AbstractMenuTemplateButton.AbstractBuilder<IslandMenuView> {
 
         @Override
         public MenuTemplateButton<IslandMenuView> build() {
-            return new MenuTemplateButtonImpl<>(buttonItem, clickSound, commands, requiredPermission,
-                    lackPermissionSound, BankBalanceButton.class, BankBalanceButton::new);
+            return new MenuTemplateButtonImpl<>(this, BankBalanceButton.class,
+                    BankBalanceButton::new);
         }
 
     }
